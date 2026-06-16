@@ -483,6 +483,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div id="managePanel"></div>
       <button style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--banana);color:var(--brown);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px" onclick="openAddProduct()">＋ เพิ่มสินค้าใหม่</button>
     </div>
+    <div class="settings-card" style="border:2px solid var(--red-light)">
+      <div class="settings-title" style="color:var(--red)">⚠️ ล้างข้อมูลทั้งหมด</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">ลบประวัติการขายและปิดยอดทั้งหมดใน Supabase ถาวร ใส่ Admin PIN เพื่อยืนยัน</div>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="clearDataPin" placeholder="Admin PIN" maxlength="4"
+          style="flex:1;border:1.5px solid #EDE7D9;border-radius:9px;padding:8px 11px;font-family:'Sarabun',sans-serif;font-size:14px;text-align:center;letter-spacing:6px;font-weight:700;outline:none">
+        <button onclick="clearAllData()" 
+          style="padding:9px 14px;border:none;border-radius:9px;background:var(--red);color:white;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+          🗑 ล้างข้อมูล
+        </button>
+      </div>
+      <div id="clearDataMsg" style="font-size:11px;margin-top:6px;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -955,15 +968,19 @@ function updateSummary() {
   const shipping = parseFloat((document.getElementById('shippingInput')||{}).value) || 0;
   let baseTotal;
   if (promoActive && promoSets > 0) {
-    const promoItems = promoSets * PROMO_SET_SIZE;
-    const remainItems = Math.max(0, cart.reduce((s,c)=>s+(Number(c.qty)||0),0) - promoItems);
-    const avgPrice = cart.length > 0 ? sub / cart.reduce((s,c)=>s+(Number(c.qty)||0),0) : PROMO_UNIT_PRICE;
-    baseTotal = (promoSets * PROMO_SET_PRICE) + (remainItems * (Number(avgPrice)||PROMO_UNIT_PRICE));
+    // promoSets sets pay 100 each, remaining items pay normal price
+    const totalQtyInCart = cart.reduce((s,c)=>s+(parseInt(c.qty)||0),0);
+    const promoItemsCount = promoSets * PROMO_SET_SIZE;
+    const remainItems = Math.max(0, totalQtyInCart - promoItemsCount);
+    // remaining items: use actual unit price from cart (weighted avg)
+    const unitPrice = totalQtyInCart > 0 ? Math.round(sub / totalQtyInCart) : PROMO_UNIT_PRICE;
+    baseTotal = Math.round((promoSets * PROMO_SET_PRICE) + (remainItems * unitPrice));
   } else {
     baseTotal = sub;
   }
-  const total = baseTotal + shipping;
+  const total = Math.round(baseTotal + shipping);
   currentTotal = total;
+  console.log('updateSummary: sub='+sub+' promoSets='+promoSets+' baseTotal='+baseTotal+' shipping='+shipping+' total='+total);
   const actualDisc = sub - baseTotal;
 
   document.getElementById('subtotalDisplay').textContent = '฿' + sub;
@@ -988,6 +1005,7 @@ function updateSummary() {
 // ============ PAYMENT ============
 function openPayment(method) {
   if (!cart.length) { showToast('กรุณาเพิ่มสินค้าก่อน'); return; }
+  if (currentTotal <= 0) { showToast('ยอดรวมต้องมากกว่า 0'); return; }
   pendingMethod = method;
   if (method === 'cash') {
     cashReceived = 0;
@@ -1017,24 +1035,25 @@ function openPayment(method) {
 function cashKeyNum(k) {
   if (cashKeyBuffer.length >= 7) return;
   cashKeyBuffer += k;
-  const val = parseInt(cashKeyBuffer) || 0;
+  const val = parseInt(cashKeyBuffer, 10) || 0;
   document.getElementById('cashKeyDisplay').textContent = '฿' + val.toLocaleString();
   cashReceived = val;
+  console.log('cashKey:', k, 'buffer:', cashKeyBuffer, 'val:', val, 'currentTotal:', currentTotal);
   updateCashDisplay();
-  // deselect quick buttons
-  document.querySelectorAll('.cq-btn').forEach(b=>b.style.fontWeight='');
+  document.querySelectorAll('.cq-btn').forEach(b => b.style.fontWeight='');
 }
 function cashKeyDel() {
   cashKeyBuffer = cashKeyBuffer.slice(0,-1);
-  const val = parseInt(cashKeyBuffer) || 0;
+  const val = cashKeyBuffer ? (parseInt(cashKeyBuffer, 10) || 0) : 0;
   document.getElementById('cashKeyDisplay').textContent = cashKeyBuffer ? '฿'+val.toLocaleString() : '-';
   cashReceived = val;
   updateCashDisplay();
 }
 function selectCash(amount) {
-  cashReceived = amount;
-  cashKeyBuffer = String(amount);
-  document.getElementById('cashKeyDisplay').textContent = '฿' + amount.toLocaleString();
+  cashReceived = parseInt(amount, 10) || 0;
+  cashKeyBuffer = String(cashReceived);
+  document.getElementById('cashKeyDisplay').textContent = '฿' + cashReceived.toLocaleString();
+  console.log('selectCash:', amount, 'cashReceived:', cashReceived, 'currentTotal:', currentTotal);
   updateCashDisplay();
   document.querySelectorAll('.cq-btn').forEach(b => b.style.fontWeight='');
   if(event && event.target) event.target.style.fontWeight='800';
@@ -1043,7 +1062,7 @@ function updateCashDisplay() {
   document.getElementById('cashReceivedDisplay').textContent = cashReceived > 0 ? '฿' + cashReceived.toLocaleString() : '฿-';
   const change = cashReceived - currentTotal;
   document.getElementById('changeDisplay').textContent = cashReceived > 0 ? '฿' + Math.max(0,change).toLocaleString() : '฿-';
-  document.getElementById('confirmCashBtn').disabled = cashReceived < currentTotal;
+  document.getElementById('confirmCashBtn').disabled = !(cashReceived >= currentTotal && cashReceived > 0 && currentTotal > 0);
 }
 
 async function confirmPayment() {
@@ -1058,11 +1077,10 @@ async function confirmPayment() {
     items: cart.map(c => ({...c})),
     subtotal: sub,
     promo_discount: Math.max(0, promoDisc),
-    shipping: shipping,
     total: currentTotal,
     method: pendingMethod,
     cash_received: pendingMethod === 'cash' ? cashReceived : null,
-    has_promo: promoActive && disc > 0,
+    has_promo: promoActive && promoDisc > 0,
     voided: false,
     void_reason: '',
     void_by: '',
@@ -1092,7 +1110,6 @@ function showSuccess(o) {
   document.getElementById('sucItems').innerHTML =
     o.items.map(i => `<div class="suc-item"><span>${i.emoji} ${i.name} ×${i.qty}</span><span>฿${(i.price*i.qty).toLocaleString()}</span></div>`).join('') +
     (o.promo_discount > 0 ? `<div class="suc-item"><span>🎁 ส่วนลดโปร ${o.has_promo?'('+promoSets+' เซ็ต)':''}</span><span style="color:var(--red)">-฿${o.promo_discount.toLocaleString()}</span></div>` : '') +
-    (o.shipping > 0 ? `<div class="suc-item"><span>ค่าขนส่ง</span><span>+฿${o.shipping.toLocaleString()}</span></div>` : '') +
     `<div class="suc-item total"><span>รวม</span><span>฿${o.total.toLocaleString()}</span></div>`;
   openModal('successModal');
 }
@@ -1475,6 +1492,38 @@ async function saveProduct() {
     renderProducts(); renderManage();
     showToast('✅ บันทึกสินค้าแล้ว');
   } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ'); }
+}
+
+async function clearAllData() {
+  const pin = document.getElementById('clearDataPin').value;
+  const msgEl = document.getElementById('clearDataMsg');
+  if (pin !== adminPin) {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = '❌ PIN ไม่ถูกต้อง';
+    return;
+  }
+  if (!confirm('⚠️ ยืนยันล้างข้อมูลทั้งหมด?\nประวัติการขายและปิดยอดจะถูกลบถาวร')) return;
+  setSyncDot('loading');
+  msgEl.style.color = 'var(--blue)';
+  msgEl.textContent = '⏳ กำลังล้างข้อมูล...';
+  try {
+    // Delete all orders
+    await sb('orders?id=neq.DUMMY', { method: 'DELETE', prefer: 'return=minimal' });
+    // Delete all eod_records
+    await sb('eod_records?id=gt.0', { method: 'DELETE', prefer: 'return=minimal' });
+    orders = [];
+    eodRecords = [];
+    document.getElementById('clearDataPin').value = '';
+    updateSummaryBar();
+    setSyncDot('ok');
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = '✅ ล้างข้อมูลเรียบร้อย';
+    showToast('✅ ล้างข้อมูลทั้งหมดแล้ว');
+  } catch(e) {
+    setSyncDot('err');
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = '❌ ล้างไม่สำเร็จ: ' + e.message;
+  }
 }
 
 async function changePin() {
