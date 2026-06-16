@@ -358,18 +358,20 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div class="promo-section">
         <div class="promo-label">โปร 3 ถุง ฿100</div>
         <div class="promo-controls">
-          <button class="promo-btn" id="promoBigBtn" onclick="togglePromo()" disabled>🎁 กดเปิดโปร</button>
-          <div class="promo-count-box" id="promoCountBox" style="display:none">
-            <button class="promo-count-btn" onclick="changePromoSets(-1)">−</button>
-            <span class="promo-count-num" id="promoSetsNum">1</span>
-            <button class="promo-count-btn" onclick="changePromoSets(1)">+</button>
-          </div>
+          <button class="promo-btn" id="promoBigBtn" onclick="tapPromo()" disabled>🎁 โปร 3 ถุง ฿100</button>
+          <button class="promo-reset-btn" id="promoResetBtn" onclick="resetPromo()" style="display:none">✕</button>
         </div>
-        <div class="promo-hint" id="promoHint">เพิ่มสินค้าอย่างน้อย 3 ชิ้นเพื่อเปิดโปร</div>
+        <div class="promo-hint" id="promoHint">เพิ่มสินค้าอย่างน้อย 3 ชิ้นเพื่อใช้โปร</div>
       </div>
       <div class="divider"></div>
       <div class="sum-row"><span class="sum-label">ยอดสินค้า</span><span class="sum-val" id="subtotalDisplay">฿0</span></div>
       <div class="sum-row" id="promoRow" style="display:none"><span class="sum-label" style="color:var(--red)">ส่วนลดโปร (<span id="promoSetsLabel">0</span> เซ็ต)</span><span class="sum-val" id="promoDiscDisplay" style="color:var(--red)">-฿0</span></div>
+      <div class="eod-row" style="margin:5px 0 3px">
+        <span style="font-size:11px;color:var(--gray);min-width:65px">ค่าขนส่ง</span>
+        <input type="number" id="shippingInput" placeholder="0" min="0" oninput="updateSummary()"
+          style="flex:1;border:1.5px solid #EDE7D9;border-radius:8px;padding:5px 8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--brown);text-align:right;outline:none;background:var(--gray-light)">
+        <span style="font-size:11px;color:var(--gray)">฿</span>
+      </div>
       <div class="divider"></div>
       <div class="sum-row sum-total"><span class="sum-label">ยอดรวม</span><span class="sum-val" id="totalDisplay">฿0</span></div>
       <div class="pay-label">ช่องทางชำระเงิน</div>
@@ -654,7 +656,17 @@ let voidTargetId = '';
 // ============ SUPABASE LOAD/SAVE ============
 async function loadProducts() {
   const data = await sb('products?select=*&order=sort_order');
-  products = (data || []).map(p => ({...p, price: Number(p.price)||0, sort_order: Number(p.sort_order)||0}));
+  products = (data || []).map(p => ({
+    id: String(p.id),
+    name: String(p.name || ''),
+    sku: String(p.sku || ''),
+    price: parseFloat(p.price) || 0,
+    emoji: String(p.emoji || '🍌'),
+    active: p.active === true || p.active === 'true',
+    is_promo: p.is_promo === true || p.is_promo === 'true',
+    sort_order: parseInt(p.sort_order) || 0
+  }));
+  console.log('products loaded:', products);
 }
 async function saveProductDB(p) {
   await sb('products?id=eq.' + p.id, { method: 'UPSERT', body: p, prefer: 'return=minimal', headers: {'Prefer':'resolution=merge-duplicates'} });
@@ -849,8 +861,11 @@ function renderProducts() {
 
 function addToCart(id) {
   const p = products.find(x => x.id === id); if (!p) return;
+  const price = parseFloat(p.price) || 0;
+  console.log('addToCart:', p.name, 'price:', price, 'raw:', p.price);
   const ex = cart.find(c => c.id === id);
-  if (ex) ex.qty++; else cart.push({id:p.id,name:p.name,sku:p.sku,price:Number(p.price)||0,emoji:p.emoji,is_promo:p.is_promo,qty:1});
+  if (ex) ex.qty++;
+  else cart.push({id:p.id, name:p.name, sku:p.sku, price:price, emoji:p.emoji, is_promo:!!p.is_promo, qty:1});
   renderCart(); updateSummary(); showToast('+ ' + p.emoji + ' ' + p.name);
 }
 function changeQty(id, d) {
@@ -873,7 +888,7 @@ function renderCart() {
         <span class="qty-num">${item.qty}</span>
         <button class="qty-btn plus" onclick="changeQty('${item.id}',1)">+</button>
       </div>
-      <div class="ci-price">฿${((Number(item.price)||0)*(Number(item.qty)||0)).toLocaleString()}</div>
+      <div class="ci-price">฿${(parseFloat(item.price)||0)*(parseInt(item.qty)||0)}</div>
     </div>`).join('');
 }
 
@@ -904,63 +919,70 @@ function calcPromoDiscount() {
   return promoSets * (PROMO_SET_SIZE * PROMO_UNIT_PRICE - PROMO_SET_PRICE);
 }
 function updateSummary() {
-  const sub = cart.reduce((s,c) => s + (Number(c.price)||0) * (Number(c.qty)||0), 0);
+  const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
+  console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
   const totalQty = cart.reduce((s,c) => s + c.qty, 0);
   const maxSets = getMaxPromoSets();
 
   // Update promo button state
   const promoBtn = document.getElementById('promoBigBtn');
   const resetBtn = document.getElementById('promoResetBtn');
+  const promoHint = document.getElementById('promoHint');
   // Clamp promoSets if cart changed
   if (promoSets > maxSets) { promoSets = maxSets; if (maxSets===0){ promoActive=false; promoSets=0; } }
 
   if (totalQty >= PROMO_SET_SIZE) {
-    promoBtn.disabled = false;
+    if (promoBtn) promoBtn.disabled = false;
     if (promoSets === 0) {
-      promoBtn.classList.remove('active');
-      promoBtn.textContent = '🎁 โปร 3 ถุง ฿100';
-      resetBtn.style.display = 'none';
-      document.getElementById('promoHint').textContent = `มี ${totalQty} ชิ้น → แตะเพื่อเพิ่มทีละเซ็ต (สูงสุด ${maxSets} เซ็ต)`;
+      if (promoBtn) { promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
+      if (resetBtn) resetBtn.style.display = 'none';
+      if (promoHint) promoHint.textContent = `มี ${totalQty} ชิ้น → แตะเพื่อเพิ่มทีละเซ็ต (สูงสุด ${maxSets} เซ็ต)`;
     } else {
-      promoBtn.classList.add('active');
-      promoBtn.textContent = `🎁 โปร ${promoSets} เซ็ต (กดเพิ่ม / ครบ ${maxSets} reset)`;
-      resetBtn.style.display = 'block';
-      document.getElementById('promoHint').textContent = `ใช้โปร ${promoSets} เซ็ต = ${promoSets*3} ถุง ฿${promoSets*100}`;
+      if (promoBtn) { promoBtn.classList.add('active'); promoBtn.textContent = `🎁 โปร ${promoSets} เซ็ต (กดเพิ่ม / ครบ ${maxSets} reset)`; }
+      if (resetBtn) resetBtn.style.display = 'block';
+      if (promoHint) promoHint.textContent = `ใช้โปร ${promoSets} เซ็ต = ${promoSets*3} ถุง ฿${promoSets*100}`;
     }
   } else {
-    promoBtn.disabled = true;
-    promoBtn.classList.remove('active');
-    promoBtn.textContent = '🎁 โปร 3 ถุง ฿100';
-    resetBtn.style.display = 'none';
-    document.getElementById('promoHint').textContent = `เพิ่มสินค้าอย่างน้อย ${PROMO_SET_SIZE} ชิ้นเพื่อใช้โปร`;
+    if (promoBtn) { promoBtn.disabled = true; promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
+    if (resetBtn) resetBtn.style.display = 'none';
+    if (promoHint) promoHint.textContent = `เพิ่มสินค้าอย่างน้อย ${PROMO_SET_SIZE} ชิ้นเพื่อใช้โปร`;
     if (promoActive) { promoActive = false; promoSets = 0; }
   }
 
   const disc = calcPromoDiscount();
   // For promo: items in sets pay promo price, rest pay normal
   // total = (promoSets * 100) + (remaining items * 39)
-  let total;
+  const shipping = parseFloat((document.getElementById('shippingInput')||{}).value) || 0;
+  let baseTotal;
   if (promoActive && promoSets > 0) {
     const promoItems = promoSets * PROMO_SET_SIZE;
     const remainItems = Math.max(0, cart.reduce((s,c)=>s+(Number(c.qty)||0),0) - promoItems);
     const avgPrice = cart.length > 0 ? sub / cart.reduce((s,c)=>s+(Number(c.qty)||0),0) : PROMO_UNIT_PRICE;
-    total = (promoSets * PROMO_SET_PRICE) + (remainItems * (Number(avgPrice)||PROMO_UNIT_PRICE));
+    baseTotal = (promoSets * PROMO_SET_PRICE) + (remainItems * (Number(avgPrice)||PROMO_UNIT_PRICE));
   } else {
-    total = sub;
+    baseTotal = sub;
   }
+  const total = baseTotal + shipping;
   currentTotal = total;
-  const actualDisc = sub - total;
+  const actualDisc = sub - baseTotal;
 
-  document.getElementById('subtotalDisplay').textContent = '฿' + sub.toLocaleString();
+  document.getElementById('subtotalDisplay').textContent = '฿' + sub;
   const promoRow = document.getElementById('promoRow');
+  const promoSetsLabelEl = document.getElementById('promoSetsLabel');
+  const promoDiscEl = document.getElementById('promoDiscDisplay');
+  const totalEl = document.getElementById('totalDisplay');
+  const subtotalEl = document.getElementById('subtotalDisplay');
   if (promoActive && promoSets > 0 && actualDisc > 0) {
-    promoRow.style.display = 'flex';
-    document.getElementById('promoSetsLabel').textContent = promoSets;
-    document.getElementById('promoDiscDisplay').textContent = '-฿' + actualDisc.toLocaleString();
+    if (promoRow) promoRow.style.display = 'flex';
+    if (promoSetsLabelEl) promoSetsLabelEl.textContent = promoSets;
+    if (promoDiscEl) promoDiscEl.textContent = '-฿' + actualDisc.toLocaleString();
   } else {
-    promoRow.style.display = 'none';
+    if (promoRow) promoRow.style.display = 'none';
   }
-  document.getElementById('totalDisplay').textContent = '฿' + total.toLocaleString();
+  const shippingEl = document.getElementById('shippingDisplay');
+  if (shippingEl) shippingEl.textContent = shipping > 0 ? '+฿' + shipping.toLocaleString() : '';
+  if (totalEl) totalEl.textContent = '฿' + total.toLocaleString();
+  if (subtotalEl) subtotalEl.textContent = '฿' + sub.toLocaleString();
 }
 
 // ============ PAYMENT ============
@@ -1025,15 +1047,18 @@ function updateCashDisplay() {
 }
 
 async function confirmPayment() {
-  const sub = cart.reduce((s,c) => s + (Number(c.price)||0) * (Number(c.qty)||0), 0);
-  const disc = sub - currentTotal; // actual discount = difference
+  const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
+  console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
+  const shipping = parseFloat((document.getElementById('shippingInput')||{}).value) || 0;
+  const promoDisc = sub - (currentTotal - shipping);
   const order = {
     id: 'ORD-' + Date.now(),
     ref: '#' + String(orders.length + 1).padStart(4,'0'),
     timestamp: new Date().toISOString(),
     items: cart.map(c => ({...c})),
     subtotal: sub,
-    promo_discount: Math.max(0, disc),
+    promo_discount: Math.max(0, promoDisc),
+    shipping: shipping,
     total: currentTotal,
     method: pendingMethod,
     cash_received: pendingMethod === 'cash' ? cashReceived : null,
@@ -1067,12 +1092,14 @@ function showSuccess(o) {
   document.getElementById('sucItems').innerHTML =
     o.items.map(i => `<div class="suc-item"><span>${i.emoji} ${i.name} ×${i.qty}</span><span>฿${(i.price*i.qty).toLocaleString()}</span></div>`).join('') +
     (o.promo_discount > 0 ? `<div class="suc-item"><span>🎁 ส่วนลดโปร ${o.has_promo?'('+promoSets+' เซ็ต)':''}</span><span style="color:var(--red)">-฿${o.promo_discount.toLocaleString()}</span></div>` : '') +
+    (o.shipping > 0 ? `<div class="suc-item"><span>ค่าขนส่ง</span><span>+฿${o.shipping.toLocaleString()}</span></div>` : '') +
     `<div class="suc-item total"><span>รวม</span><span>฿${o.total.toLocaleString()}</span></div>`;
   openModal('successModal');
 }
 
 function newOrder() {
   cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
+  const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = '';
   document.getElementById('promoBigBtn').classList.remove('active');
   document.getElementById('promoBigBtn').textContent = '🎁 โปร 3 ถุง ฿100';
   document.getElementById('promoResetBtn').style.display = 'none';
