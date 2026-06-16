@@ -654,7 +654,7 @@ let voidTargetId = '';
 // ============ SUPABASE LOAD/SAVE ============
 async function loadProducts() {
   const data = await sb('products?select=*&order=sort_order');
-  products = data || [];
+  products = (data || []).map(p => ({...p, price: Number(p.price)||0, sort_order: Number(p.sort_order)||0}));
 }
 async function saveProductDB(p) {
   await sb('products?id=eq.' + p.id, { method: 'UPSERT', body: p, prefer: 'return=minimal', headers: {'Prefer':'resolution=merge-duplicates'} });
@@ -850,7 +850,7 @@ function renderProducts() {
 function addToCart(id) {
   const p = products.find(x => x.id === id); if (!p) return;
   const ex = cart.find(c => c.id === id);
-  if (ex) ex.qty++; else cart.push({id:p.id,name:p.name,sku:p.sku,price:p.price,emoji:p.emoji,is_promo:p.is_promo,qty:1});
+  if (ex) ex.qty++; else cart.push({id:p.id,name:p.name,sku:p.sku,price:Number(p.price)||0,emoji:p.emoji,is_promo:p.is_promo,qty:1});
   renderCart(); updateSummary(); showToast('+ ' + p.emoji + ' ' + p.name);
 }
 function changeQty(id, d) {
@@ -873,7 +873,7 @@ function renderCart() {
         <span class="qty-num">${item.qty}</span>
         <button class="qty-btn plus" onclick="changeQty('${item.id}',1)">+</button>
       </div>
-      <div class="ci-price">฿${(item.price*item.qty).toLocaleString()}</div>
+      <div class="ci-price">฿${((Number(item.price)||0)*(Number(item.qty)||0)).toLocaleString()}</div>
     </div>`).join('');
 }
 
@@ -888,13 +888,14 @@ function tapPromo() {
   promoSets = (promoSets >= maxSets) ? 0 : promoSets + 1;
   promoActive = promoSets > 0;
   updateSummary();
+  if (promoSets > 0) showToast('🎁 โปร ' + promoSets + ' เซ็ต = ฿' + (promoSets * 100));
 }
 function resetPromo() {
   promoSets = 0; promoActive = false;
   updateSummary();
 }
 function getMaxPromoSets() {
-  const totalQty = cart.reduce((s,c) => s + c.qty, 0);
+  const totalQty = cart.reduce((s,c) => s + (Number(c.qty)||0), 0);
   return Math.floor(totalQty / PROMO_SET_SIZE);
 }
 function calcPromoDiscount() {
@@ -903,7 +904,7 @@ function calcPromoDiscount() {
   return promoSets * (PROMO_SET_SIZE * PROMO_UNIT_PRICE - PROMO_SET_PRICE);
 }
 function updateSummary() {
-  const sub = cart.reduce((s,c) => s + c.price * c.qty, 0);
+  const sub = cart.reduce((s,c) => s + (Number(c.price)||0) * (Number(c.qty)||0), 0);
   const totalQty = cart.reduce((s,c) => s + c.qty, 0);
   const maxSets = getMaxPromoSets();
 
@@ -941,8 +942,9 @@ function updateSummary() {
   let total;
   if (promoActive && promoSets > 0) {
     const promoItems = promoSets * PROMO_SET_SIZE;
-    const remainItems = Math.max(0, cart.reduce((s,c)=>s+c.qty,0) - promoItems);
-    total = (promoSets * PROMO_SET_PRICE) + (remainItems * PROMO_UNIT_PRICE);
+    const remainItems = Math.max(0, cart.reduce((s,c)=>s+(Number(c.qty)||0),0) - promoItems);
+    const avgPrice = cart.length > 0 ? sub / cart.reduce((s,c)=>s+(Number(c.qty)||0),0) : PROMO_UNIT_PRICE;
+    total = (promoSets * PROMO_SET_PRICE) + (remainItems * (Number(avgPrice)||PROMO_UNIT_PRICE));
   } else {
     total = sub;
   }
@@ -1023,7 +1025,7 @@ function updateCashDisplay() {
 }
 
 async function confirmPayment() {
-  const sub = cart.reduce((s,c) => s + c.price * c.qty, 0);
+  const sub = cart.reduce((s,c) => s + (Number(c.price)||0) * (Number(c.qty)||0), 0);
   const disc = sub - currentTotal; // actual discount = difference
   const order = {
     id: 'ORD-' + Date.now(),
