@@ -216,12 +216,23 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .dash-filter input[type=date]{border:1.5px solid #EDE7D9;border-radius:9px;padding:6px 8px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--brown);outline:none;background:white}
 .filter-btn{padding:7px 11px;border:none;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--banana);color:var(--brown)}
 .filter-btn.outline{background:white;border:1.5px solid #EDE7D9;color:var(--gray)}
-.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:12px}
 .kpi-card{background:white;border-radius:var(--radius-sm);padding:10px;box-shadow:var(--shadow);text-align:center}
 .kpi-label{font-size:9px;color:var(--gray);font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
 .kpi-value{font-size:17px;font-weight:800;color:var(--brown-mid)}
 .kpi-sub{font-size:10px;color:var(--gray);margin-top:2px}
 .dash-section{background:white;border-radius:var(--radius-sm);padding:12px;box-shadow:var(--shadow);margin-bottom:9px}
+.dash-summary{background:linear-gradient(135deg,#3E1F00,#5a2d00);color:var(--banana-light);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:11px;font-size:13px;line-height:1.6;box-shadow:var(--shadow)}
+.dash-summary strong{color:var(--banana);font-size:14px}
+.stack-bar-wrap{margin-bottom:8px}
+.stack-bar{display:flex;width:100%;height:22px;border-radius:11px;overflow:hidden;background:var(--gray-light)}
+.stack-seg{height:100%;transition:width .4s;min-width:2px}
+.stack-legend{display:flex;flex-direction:column;gap:5px}
+.stack-legend-item{display:flex;align-items:center;gap:7px;font-size:11px}
+.stack-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.stack-legend-label{color:var(--brown);font-weight:600;flex:1}
+.stack-legend-val{color:var(--brown-mid);font-weight:800;font-size:12px}
+.stack-legend-extra{color:var(--gray);font-size:10px;min-width:55px;text-align:right}
 .dash-section-title{font-size:12px;font-weight:700;color:var(--brown);margin-bottom:10px}
 .dash-tabs{display:flex;gap:5px;margin-bottom:10px}
 .dash-tab{padding:5px 10px;border:none;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray)}
@@ -234,6 +245,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 
 /* EOD */
 .eod-card{background:white;border-radius:var(--radius-sm);padding:13px;box-shadow:var(--shadow);margin-bottom:9px}
+.cash-count-grid{display:flex;flex-direction:column;gap:6px}
+.cc-row{display:grid;grid-template-columns:42px 16px 1fr 90px;align-items:center;gap:6px}
+.cc-denom{font-size:13px;font-weight:700;color:var(--brown-mid);text-align:right}
+.cc-x{font-size:12px;color:var(--gray);text-align:center}
+.cc-input{border:1.5px solid #EDE7D9;border-radius:8px;padding:6px 9px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--brown);outline:none;background:var(--gray-light);text-align:center}
+.cc-input:focus{border-color:var(--banana);background:white}
+.cc-sub{font-size:11px;color:var(--gray);text-align:right;font-weight:600}
 .eod-title{font-size:13px;font-weight:700;color:var(--brown);margin-bottom:11px;border-bottom:1px solid #EDE7D9;padding-bottom:7px}
 .eod-row{display:flex;align-items:center;gap:7px;margin-bottom:7px}
 .eod-lbl{font-size:12px;color:var(--gray);min-width:145px;line-height:1.3}
@@ -399,6 +417,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <button class="filter-btn outline" onclick="setFToday()">วันนี้</button>
       <button class="filter-btn outline" onclick="setF7()">7 วัน</button>
       <button class="filter-btn outline" onclick="setF30()">30 วัน</button>
+      <button class="filter-btn outline" onclick="setFAll()">ทั้งหมด</button>
     </div>
     <div id="dashContent"></div>
   </div>
@@ -414,6 +433,16 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
   <div class="panel">
     <div class="eod-card">
       <div class="eod-title">💰 สรุปยอดประจำวัน — <span id="eodDate"></span></div>
+
+      <div style="background:var(--banana-light);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--brown-mid);font-weight:600">🌅 เงินตั้งต้นวันนี้ (จากเมื่อวาน)</span>
+        <span id="eodOpeningBalance" style="font-size:17px;font-weight:800;color:var(--brown)">฿0</span>
+      </div>
+      <div class="eod-row" id="manualOpeningRow" style="display:none">
+        <span class="eod-lbl">ไม่มีประวัติ — กรอกเอง</span>
+        <input type="number" class="eod-input" id="eodOpeningManual" placeholder="0" oninput="calcEOD()">
+      </div>
+
       <div class="eod-row"><span class="eod-lbl">ยอดขายรวม (จาก POS)</span><input class="eod-input auto" id="eodSales" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— เงินสด</span><input class="eod-input auto" id="eodCashPOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— QR</span><input class="eod-input auto" id="eodQRPOS" readonly></div>
@@ -421,19 +450,80 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div class="eod-row"><span class="eod-lbl">— Shopee</span><input class="eod-input auto" id="eodShopeePOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— โครงการรัฐ</span><input class="eod-input auto" id="eodGovPOS" readonly></div>
       <div class="eod-div"></div>
-      <div class="eod-row"><span class="eod-lbl">เงินสดจริง (นับได้)</span><input type="number" class="eod-input" id="eodCashReal" placeholder="0" oninput="calcEOD()"></div>
-      <div class="eod-row"><span class="eod-lbl">เงินทอนคงเหลือ</span><input type="number" class="eod-input" id="eodChange" placeholder="0" oninput="calcEOD()"></div>
-      <div class="eod-row"><span class="eod-lbl">นำฝากธนาคาร</span><input type="number" class="eod-input" id="eodDeposit" placeholder="0" oninput="calcEOD()"></div>
-      <div class="eod-row"><span class="eod-lbl">ค่าใช้จ่ายอื่นๆ</span><input type="number" class="eod-input" id="eodExpense" placeholder="0" oninput="calcEOD()"></div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">💵 นับแบงค์เงินสด</div>
+      <div class="cash-count-grid" id="cashCountGrid"></div>
+      <div class="eod-row" style="margin-top:8px;background:var(--banana-light);border-radius:8px;padding:8px 10px">
+        <span class="eod-lbl" style="font-weight:700;color:var(--brown)">รวมเงินสดที่นับได้</span>
+        <span id="eodCashRealDisplay" style="flex:1;text-align:right;font-weight:800;font-size:16px;color:var(--brown-mid)">฿0</span>
+      </div>
       <div class="eod-div"></div>
+
+      <div class="eod-row"><span class="eod-lbl">นำฝากธนาคาร</span><input type="number" class="eod-input" id="eodDeposit" placeholder="0" oninput="calcEOD()"></div>
+      <div class="eod-row"><span class="eod-lbl">ค่าใช้จ่ายอื่นๆ (เบิก)</span><input type="number" class="eod-input" id="eodExpense" placeholder="0" oninput="calcEOD()"></div>
+      <div class="eod-div"></div>
+
+      <div class="eod-res" style="font-size:12px;color:var(--gray)"><span>เงินสดควรมี (ตั้งต้น+ขายสด)</span><span id="resShouldHave">฿0</span></div>
       <div class="eod-res pos" id="eodDiffRow"><span>ส่วนต่างเงินสด</span><span id="resDiff">฿0</span></div>
-      <div class="eod-res highlight"><span>💵 เงินตั้งต้นพรุ่งนี้</span><span id="resNext">฿0</span></div>
-      <div class="eod-row" style="margin-top:9px"><span class="eod-lbl">หมายเหตุ</span><input type="text" class="eod-input" id="eodNote" placeholder="บันทึกเพิ่มเติม..." style="text-align:left"></div>
-      <button class="btn-save-eod" onclick="saveEOD()">💾 บันทึกปิดยอด</button>
+      <div class="eod-res highlight"><span>💵 เงินตั้งต้นวันพรุ่งนี้</span><span id="resNext">฿0</span></div>
+
+      <div class="eod-row" style="margin-top:9px">
+        <span class="eod-lbl">ลงชื่อผู้ปิดยอด <span style="color:var(--red)">*</span></span>
+        <input type="text" class="eod-input" id="eodStaffName" placeholder="ชื่อพนักงาน" style="text-align:left">
+      </div>
+      <div class="eod-row"><span class="eod-lbl">หมายเหตุ</span><input type="text" class="eod-input" id="eodNote" placeholder="บันทึกเพิ่มเติม..." style="text-align:left"></div>
+      <button class="btn-save-eod" id="saveEodBtn" onclick="saveEOD()">💾 บันทึกปิดยอด</button>
+      <div id="eodSaveError" style="color:var(--red);font-size:12px;margin-top:6px;text-align:center"></div>
     </div>
+
     <div class="eod-card">
       <div class="eod-title">📅 ประวัติปิดยอด</div>
+      <div class="dash-filter" style="margin-bottom:10px">
+        <input type="date" id="eodFilterFrom">
+        <span style="font-size:12px;color:var(--gray)">ถึง</span>
+        <input type="date" id="eodFilterTo">
+        <button class="filter-btn" onclick="renderEODHistory()">ดู</button>
+        <button class="filter-btn outline" onclick="eodSetFilter7()">7 วัน</button>
+        <button class="filter-btn outline" onclick="eodSetFilter30()">30 วัน</button>
+        <button class="filter-btn outline" onclick="eodSetFilterAll()">ทั้งหมด</button>
+      </div>
       <div id="eodHistory"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT EOD (Admin PIN required) -->
+<div class="modal-overlay" id="editEodModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">✏️ แก้ไขปิดยอด (Admin)</div><button class="modal-close" onclick="closeModal('editEodModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="void-info">วันที่: <strong id="editEodDate">-</strong></div>
+      <div class="form-group">
+        <label class="form-label">เงินสดจริง (นับได้)</label>
+        <input type="number" class="form-input" id="editEodCashReal">
+      </div>
+      <div class="form-group">
+        <label class="form-label">นำฝากธนาคาร</label>
+        <input type="number" class="form-input" id="editEodDeposit">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ค่าใช้จ่ายอื่นๆ</label>
+        <input type="number" class="form-input" id="editEodExpense">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ลงชื่อผู้แก้ไข <span style="color:var(--red)">*</span></label>
+        <input type="text" class="form-input" id="editEodEditor" placeholder="ชื่อ Admin ที่แก้ไข" oninput="checkEditEodForm()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">เหตุผลที่แก้ไข <span style="color:var(--red)">*</span></label>
+        <input type="text" class="form-input" id="editEodReason" placeholder="เช่น นับเงินผิด, กรอกเลขผิด" oninput="checkEditEodForm()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Admin PIN <span style="color:var(--red)">*</span></label>
+        <input type="password" class="form-input" id="editEodPin" placeholder="PIN 4 หลัก" maxlength="4" oninput="checkEditEodForm()">
+      </div>
+      <div style="color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px" id="editEodError"></div>
+      <button class="btn-void" id="editEodConfirmBtn" onclick="confirmEditEod()" disabled>💾 บันทึกการแก้ไข</button>
     </div>
   </div>
 </div>
@@ -1211,9 +1301,10 @@ async function doVoid() {
 
 // ============ DASHBOARD ============
 function toYMD(d) { return d.toISOString().slice(0,10); }
-function setFToday() { const t=toYMD(new Date()); document.getElementById('filterFrom').value=t; document.getElementById('filterTo').value=t; }
-function setF7() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); }
-function setF30() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-29); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); }
+function setFToday() { const t=toYMD(new Date()); document.getElementById('filterFrom').value=t; document.getElementById('filterTo').value=t; renderDashboard(); }
+function setF7() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
+function setF30() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-29); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
+function setFAll() { document.getElementById('filterFrom').value=''; document.getElementById('filterTo').value=''; renderDashboard(); }
 
 function getFilteredOrders() {
   const from = document.getElementById('filterFrom').value, to = document.getElementById('filterTo').value;
@@ -1221,11 +1312,14 @@ function getFilteredOrders() {
 }
 
 let dashMode = 'money'; // 'money' or 'count'
+let trendMode = 'money'; // 'money' or 'count' for trend line
 
 function renderDashboard() {
   const f = getFilteredOrders();
+  const from = document.getElementById('filterFrom').value, to = document.getElementById('filterTo').value;
   const total = f.reduce((s,o)=>s+o.total,0), bills = f.length, avg = bills?Math.round(total/bills):0;
-  const voidCount = orders.filter(o=>{const d=toYMD(new Date(o.timestamp));const from=document.getElementById('filterFrom').value,to=document.getElementById('filterTo').value;return(!from||d>=from)&&(!to||d<=to)&&o.voided;}).length;
+  const totalQty = f.reduce((s,o)=>s+o.items.reduce((s2,i)=>s2+i.qty,0),0);
+  const voidCount = orders.filter(o=>{const d=toYMD(new Date(o.timestamp));return(!from||d>=from)&&(!to||d<=to)&&o.voided;}).length;
 
   // by flavor
   const flavorMap = {};
@@ -1251,12 +1345,37 @@ function renderDashboard() {
   const promoRev = promoOrders.reduce((s,o)=>s+o.total,0), normalRev = normalOrders.reduce((s,o)=>s+o.total,0);
   const maxPm = Math.max(promoRev,normalRev,1);
 
+  // ---- Trend line data (group orders by day) ----
+  const dayMap = {};
+  f.forEach(o => {
+    const d = toYMD(new Date(o.timestamp));
+    if (!dayMap[d]) dayMap[d] = {revenue:0, qty:0};
+    dayMap[d].revenue += o.total;
+    dayMap[d].qty += o.items.reduce((s,i)=>s+i.qty,0);
+  });
+  const sortedDays = Object.keys(dayMap).sort();
+  const isMultiDay = sortedDays.length > 1;
+
   document.getElementById('dashContent').innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">ยอดขายรวม</div><div class="kpi-value">฿${total.toLocaleString()}</div><div class="kpi-sub">${bills} บิล</div></div>
       <div class="kpi-card"><div class="kpi-label">เฉลี่ย/บิล</div><div class="kpi-value">฿${avg.toLocaleString()}</div><div class="kpi-sub">avg basket</div></div>
       <div class="kpi-card"><div class="kpi-label">Void</div><div class="kpi-value" style="color:var(--red)">${voidCount}</div><div class="kpi-sub">บิล</div></div>
+      <div class="kpi-card"><div class="kpi-label">จำนวนรวม</div><div class="kpi-value">${totalQty.toLocaleString()}</div><div class="kpi-sub">ถุง</div></div>
     </div>
+
+    ${isMultiDay ? `
+    <div class="dash-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+        <div class="dash-section-title" style="margin:0">📈 เทรนด์ยอดขายรายวัน</div>
+        <div class="dash-tabs">
+          <button class="dash-tab ${trendMode==='money'?'active':''}" onclick="trendMode='money';renderDashboard()">฿ ยอดเงิน</button>
+          <button class="dash-tab ${trendMode==='count'?'active':''}" onclick="trendMode='count';renderDashboard()"># จำนวน</button>
+        </div>
+      </div>
+      ${renderTrendLine(sortedDays, dayMap, trendMode)}
+    </div>` : ''}
+
     <div class="dash-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
         <div class="dash-section-title" style="margin:0">📊 แยกตามหัวข้อ</div>
@@ -1267,27 +1386,94 @@ function renderDashboard() {
       </div>
 
       <div style="font-size:11px;font-weight:700;color:var(--gray);margin:8px 0 6px;text-transform:uppercase;letter-spacing:.8px">🏷️ โปร vs ปกติ</div>
-      ${dashMode==='money'
-        ? renderBar('🎁 โปร',promoRev,maxPm,'#C62828',promoOrders.length+' บิล') + renderBar('💰 ปกติ',normalRev,maxPm,'#2E7D32',normalOrders.length+' บิล')
-        : renderBar('🎁 โปร',promoOrders.length,Math.max(promoOrders.length,normalOrders.length,1),'#C62828','') + renderBar('💰 ปกติ',normalOrders.length,Math.max(promoOrders.length,normalOrders.length,1),'#2E7D32','')}
+      ${renderStackedBar([
+          {label:'🎁 โปร', value: dashMode==='money'?promoRev:promoOrders.length, color:'#C62828', extra: dashMode==='money'?promoOrders.length+' บิล':'฿'+promoRev.toLocaleString()},
+          {label:'💰 ปกติ', value: dashMode==='money'?normalRev:normalOrders.length, color:'#2E7D32', extra: dashMode==='money'?normalOrders.length+' บิล':'฿'+normalRev.toLocaleString()}
+        ])}
 
-      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.8px">🍌 รสชาติ</div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.8px">🍌 รสชาติ</div>
       ${flavors.length
-        ? flavors.map(([n,d],i) => dashMode==='money'
-            ? renderBar(d.emoji+' '+n, d.revenue, maxFm, COLORS[i%COLORS.length], d.qty+' ถุง')
-            : renderBar(d.emoji+' '+n, d.qty, maxFc, COLORS[i%COLORS.length], '฿'+d.revenue.toLocaleString())
-          ).join('')
+        ? renderStackedBar(flavors.map(([n,d],i) => ({
+            label: d.emoji+' '+n,
+            value: dashMode==='money'?d.revenue:d.qty,
+            color: COLORS[i%COLORS.length],
+            extra: dashMode==='money'? d.qty+' ถุง' : '฿'+d.revenue.toLocaleString()
+          })))
         : '<div style="color:var(--gray);font-size:12px">ยังไม่มีข้อมูล</div>'}
 
-      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.8px">💳 ช่องทางชำระเงิน</div>
-      ${methodData.map(m => {
+      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.8px">💳 ช่องทางชำระเงิน</div>
+      ${renderStackedBar(methodData.map(m => {
           const v = f.filter(o=>o.method===m.key).reduce((s,o)=>s+o.total,0);
           const c = f.filter(o=>o.method===m.key).length;
-          return dashMode==='money'
-            ? renderBar(m.label, v, maxMm, m.color, c+' บิล')
-            : renderBar(m.label, c, maxMc, m.color, '฿'+v.toLocaleString());
-        }).join('')}
+          return {label:m.label, value: dashMode==='money'?v:c, color:m.color, extra: dashMode==='money'?c+' บิล':'฿'+v.toLocaleString()};
+        }))}
     </div>`;
+}
+
+// ---- Stacked horizontal bar (single bar made of segments) ----
+function renderStackedBar(items) {
+  const total = items.reduce((s,i)=>s+i.value,0) || 1;
+  const segments = items.map(i => {
+    const pct = Math.max(0, (i.value/total*100));
+    return `<div class="stack-seg" style="width:${pct}%;background:${i.color}" title="${i.label}: ${i.value}"></div>`;
+  }).join('');
+  const legend = items.map(i => `
+    <div class="stack-legend-item">
+      <span class="stack-dot" style="background:${i.color}"></span>
+      <span class="stack-legend-label">${i.label}</span>
+      <span class="stack-legend-val">${i.value>=100?'฿'+i.value.toLocaleString():i.value.toLocaleString()}</span>
+      <span class="stack-legend-extra">${i.extra||''}</span>
+    </div>`).join('');
+  return `<div class="stack-bar-wrap"><div class="stack-bar">${segments}</div></div><div class="stack-legend">${legend}</div>`;
+}
+
+// ---- Trend line chart (SVG) ----
+function renderTrendLine(days, dayMap, mode) {
+  if (!days.length) return '<div style="color:var(--gray);font-size:12px">ยังไม่มีข้อมูล</div>';
+  const W = 600, H = 140, padL = 8, padR = 8, padT = 16, padB = 24;
+  const values = days.map(d => mode==='money' ? dayMap[d].revenue : dayMap[d].qty);
+  const maxV = Math.max(...values, 1);
+  const stepX = days.length > 1 ? (W-padL-padR)/(days.length-1) : 0;
+  const points = values.map((v,i) => {
+    const x = padL + stepX*i;
+    const y = padT + (H-padT-padB) * (1 - v/maxV);
+    return {x,y,v,date:days[i]};
+  });
+  const pathD = points.map((p,i) => (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${H-padB} L${points[0].x.toFixed(1)},${H-padB} Z`;
+
+  const dots = points.map(p => `
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#7A4210" stroke="white" stroke-width="1.5"/>
+  `).join('');
+
+  // show every Nth label to avoid crowding
+  const labelEvery = days.length > 10 ? Math.ceil(days.length/6) : 1;
+  const labels = points.map((p,i) => {
+    if (i % labelEvery !== 0 && i !== points.length-1) return '';
+    const d = new Date(p.date);
+    const lbl = d.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    return `<text x="${p.x.toFixed(1)}" y="${H-6}" font-size="9" fill="#999" text-anchor="middle">${lbl}</text>`;
+  }).join('');
+
+  const valueLabels = points.map(p => {
+    const txt = mode==='money' ? '฿'+Math.round(p.v).toLocaleString() : p.v.toLocaleString();
+    return `<text x="${p.x.toFixed(1)}" y="${(p.y-8).toFixed(1)}" font-size="9" fill="#7A4210" font-weight="700" text-anchor="middle">${txt}</text>`;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+      <defs>
+        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#F5C518" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#F5C518" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#trendGrad)"/>
+      <path d="${pathD}" fill="none" stroke="#D4A017" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${valueLabels}
+      ${labels}
+    </svg>`;
 }
 
 function renderBar(label,val,max,color,extra) {
@@ -1300,6 +1486,9 @@ function renderBar(label,val,max,color,extra) {
 }
 
 // ============ EOD ============
+const BANKNOTES = [1000, 500, 100, 50, 20, 10, 5, 2, 1];
+let editEodTargetDate = '';
+
 function initEOD() {
   document.getElementById('eodDate').textContent = new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
@@ -1312,58 +1501,166 @@ function initEOD() {
   document.getElementById('eodLinePOS').value = '฿' + totals.line.toLocaleString();
   document.getElementById('eodShopeePOS').value = '฿' + totals.shopee.toLocaleString();
   document.getElementById('eodGovPOS').value = '฿' + totals.gov.toLocaleString();
-  loadEOD().then(renderEODHistory);
-  calcEOD();
+
+  // Build banknote count grid
+  const grid = document.getElementById('cashCountGrid');
+  grid.innerHTML = BANKNOTES.map(n => `
+    <div class="cc-row">
+      <span class="cc-denom">฿${n}</span>
+      <span class="cc-x">×</span>
+      <input type="number" min="0" class="cc-input" id="cc_${n}" placeholder="0" oninput="calcEOD()">
+      <span class="cc-sub" id="cc_sub_${n}">= ฿0</span>
+    </div>`).join('');
+
+  loadEOD().then(() => {
+    // Find yesterday's record to pull opening balance
+    const todayStr = new Date().toISOString().slice(0,10);
+    const existingToday = eodRecords.find(r => r.date === todayStr);
+    const sorted = [...eodRecords].sort((a,b)=> b.date.localeCompare(a.date));
+    const lastRecord = sorted.find(r => r.date < todayStr);
+
+    if (existingToday) {
+      // Already closed today - load existing values for reference/edit awareness
+      document.getElementById('eodOpeningBalance').textContent = '฿' + (existingToday.opening_balance||0).toLocaleString();
+      document.getElementById('manualOpeningRow').style.display = 'none';
+    } else if (lastRecord) {
+      document.getElementById('eodOpeningBalance').textContent = '฿' + (lastRecord.next_day||0).toLocaleString();
+      document.getElementById('manualOpeningRow').style.display = 'none';
+    } else {
+      document.getElementById('eodOpeningBalance').textContent = '฿0 (ไม่มีประวัติ)';
+      document.getElementById('manualOpeningRow').style.display = 'flex';
+    }
+    renderEODHistory();
+    calcEOD();
+  });
+
+  // default filter range = last 14 days
+  eodSetFilter30();
 }
+
+function getOpeningBalanceToday() {
+  const txt = document.getElementById('eodOpeningBalance').textContent.replace(/[^\d]/g,'');
+  const manual = parseFloat(document.getElementById('eodOpeningManual').value) || 0;
+  const manualVisible = document.getElementById('manualOpeningRow').style.display !== 'none';
+  return manualVisible ? manual : (parseFloat(txt) || 0);
+}
+
+function getCashRealTotal() {
+  let total = 0;
+  BANKNOTES.forEach(n => {
+    const qty = parseInt(document.getElementById('cc_'+n).value) || 0;
+    const sub = qty * n;
+    total += sub;
+    const subEl = document.getElementById('cc_sub_'+n);
+    if (subEl) subEl.textContent = '= ฿' + sub.toLocaleString();
+  });
+  return total;
+}
+
 function calcEOD() {
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
   const cashFromPOS = tod.filter(o=>o.method==='cash').reduce((s,o)=>s+o.total,0);
-  const cashReal = parseFloat(document.getElementById('eodCashReal').value)||0;
-  const change = parseFloat(document.getElementById('eodChange').value)||0;
+  const opening = getOpeningBalanceToday();
+  const cashReal = getCashRealTotal();
+  document.getElementById('eodCashRealDisplay').textContent = '฿' + cashReal.toLocaleString();
+
   const deposit = parseFloat(document.getElementById('eodDeposit').value)||0;
   const expense = parseFloat(document.getElementById('eodExpense').value)||0;
-  const diff = cashReal - cashFromPOS;
-  const next = cashReal - change - deposit - expense;
+
+  const shouldHave = opening + cashFromPOS;
+  const diff = cashReal - shouldHave;
+  const next = cashReal - deposit - expense;
+
+  document.getElementById('resShouldHave').textContent = '฿' + shouldHave.toLocaleString();
   document.getElementById('resDiff').textContent = (diff>=0?'+':'')+'฿'+diff.toLocaleString();
   document.getElementById('eodDiffRow').className = 'eod-res '+(diff>=0?'pos':'neg');
   document.getElementById('resNext').textContent = '฿'+Math.max(0,next).toLocaleString();
 }
+
 async function saveEOD() {
+  const errEl = document.getElementById('eodSaveError');
+  errEl.textContent = '';
+  const staffName = document.getElementById('eodStaffName').value.trim();
+  if (!staffName) { errEl.textContent = '⚠️ กรุณาระบุชื่อผู้ปิดยอด'; return; }
+
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
   const totals = {cash:0,qr:0,line:0,shopee:0,gov:0};
   tod.forEach(o=>totals[o.method]=(totals[o.method]||0)+o.total);
-  const cashReal = parseFloat(document.getElementById('eodCashReal').value)||0;
-  const change = parseFloat(document.getElementById('eodChange').value)||0;
+
+  const opening = getOpeningBalanceToday();
+  const cashReal = getCashRealTotal();
   const deposit = parseFloat(document.getElementById('eodDeposit').value)||0;
   const expense = parseFloat(document.getElementById('eodExpense').value)||0;
+
+  const denomCounts = {};
+  BANKNOTES.forEach(n => { denomCounts[n] = parseInt(document.getElementById('cc_'+n).value) || 0; });
+
   const r = {
     date: new Date().toISOString().slice(0,10),
     date_label: new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'}),
+    opening_balance: opening,
     sales_total: Object.values(totals).reduce((a,b)=>a+b,0),
     by_method: totals,
-    cash_real: cashReal, change_kept: change, deposit, expense,
+    cash_real: cashReal,
+    denom_counts: denomCounts,
+    deposit, expense,
+    staff_name: staffName,
     note: document.getElementById('eodNote').value,
-    next_day: cashReal-change-deposit-expense
+    next_day: cashReal-deposit-expense
   };
   setSyncDot('loading');
+  document.getElementById('saveEodBtn').disabled = true;
   try {
     await saveEODDB(r);
     eodRecords = eodRecords.filter(x=>x.date!==r.date);
     eodRecords.unshift(r);
     setSyncDot('ok');
     renderEODHistory();
-    showToast('✅ บันทึกปิดยอดแล้ว');
-  } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ'); }
+    showToast('✅ บันทึกปิดยอดแล้ว โดย ' + staffName);
+  } catch(e) {
+    setSyncDot('err');
+    errEl.textContent = '❌ บันทึกไม่สำเร็จ: ' + e.message;
+  }
+  document.getElementById('saveEodBtn').disabled = false;
 }
+
+function eodSetFilter7() {
+  const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6);
+  document.getElementById('eodFilterFrom').value = f.toISOString().slice(0,10);
+  document.getElementById('eodFilterTo').value = t.toISOString().slice(0,10);
+  renderEODHistory();
+}
+function eodSetFilter30() {
+  const t=new Date(),f=new Date(t); f.setDate(f.getDate()-29);
+  document.getElementById('eodFilterFrom').value = f.toISOString().slice(0,10);
+  document.getElementById('eodFilterTo').value = t.toISOString().slice(0,10);
+  renderEODHistory();
+}
+function eodSetFilterAll() {
+  document.getElementById('eodFilterFrom').value = '';
+  document.getElementById('eodFilterTo').value = '';
+  renderEODHistory();
+}
+
 function renderEODHistory() {
   const el = document.getElementById('eodHistory');
-  if (!eodRecords.length) { el.innerHTML='<div style="color:var(--gray);font-size:12px;text-align:center;padding:16px">ยังไม่มีประวัติ</div>'; return; }
-  el.innerHTML = eodRecords.slice(0,14).map(r=>`
+  const from = document.getElementById('eodFilterFrom').value;
+  const to = document.getElementById('eodFilterTo').value;
+  const filtered = eodRecords.filter(r => (!from || r.date >= from) && (!to || r.date <= to));
+
+  if (!filtered.length) { el.innerHTML='<div style="color:var(--gray);font-size:12px;text-align:center;padding:16px">ไม่พบประวัติในช่วงที่เลือก</div>'; return; }
+
+  el.innerHTML = filtered.map(r=>`
     <div class="eod-hist-item">
-      <div class="eod-hist-date">📅 ${r.date_label}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="eod-hist-date">📅 ${r.date_label}</div>
+        <button onclick="openEditEod('${r.date}')" style="padding:3px 9px;border:none;border-radius:7px;background:var(--banana-light);color:var(--brown-mid);font-family:'Sarabun',sans-serif;font-size:10px;font-weight:700;cursor:pointer">✏️ แก้ไข</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:11px;color:var(--gray)">
+        <span>ตั้งต้น: ฿${(r.opening_balance||0).toLocaleString()}</span>
         <span>ยอดรวม: <strong style="color:var(--brown-mid)">฿${r.sales_total.toLocaleString()}</strong></span>
         <span>สด: ฿${(r.by_method.cash||0).toLocaleString()}</span>
+        <span>นับได้: ฿${(r.cash_real||0).toLocaleString()}</span>
         <span>QR: ฿${(r.by_method.qr||0).toLocaleString()}</span>
         <span>Line: ฿${(r.by_method.line||0).toLocaleString()}</span>
         <span>Shopee: ฿${(r.by_method.shopee||0).toLocaleString()}</span>
@@ -1371,8 +1668,70 @@ function renderEODHistory() {
         <span>ฝากแบงค์: ฿${(r.deposit||0).toLocaleString()}</span>
         <span style="color:var(--green);font-weight:700">ตั้งต้นพรุ่งนี้: ฿${Math.max(0,r.next_day||0).toLocaleString()}</span>
       </div>
-      ${r.note?`<div style="font-size:11px;color:var(--gray);margin-top:3px">📝 ${r.note}</div>`:''}
+      <div style="font-size:11px;color:var(--brown-mid);margin-top:4px;font-weight:600">👤 ปิดยอดโดย: ${r.staff_name||'-'}</div>
+      ${r.note?`<div style="font-size:11px;color:var(--gray);margin-top:2px">📝 ${r.note}</div>`:''}
+      ${r.edited_by?`<div style="font-size:10px;color:var(--red);margin-top:4px;padding-top:4px;border-top:1px dashed #eee">✏️ แก้ไขล่าสุดโดย ${r.edited_by}: ${r.edit_reason||''}</div>`:''}
     </div>`).join('');
+}
+
+// ---- Admin-gated EOD edit ----
+function openEditEod(date) {
+  const r = eodRecords.find(x => x.date === date);
+  if (!r) return;
+  editEodTargetDate = date;
+  document.getElementById('editEodDate').textContent = r.date_label;
+  document.getElementById('editEodCashReal').value = r.cash_real || 0;
+  document.getElementById('editEodDeposit').value = r.deposit || 0;
+  document.getElementById('editEodExpense').value = r.expense || 0;
+  document.getElementById('editEodEditor').value = '';
+  document.getElementById('editEodReason').value = '';
+  document.getElementById('editEodPin').value = '';
+  document.getElementById('editEodError').textContent = '';
+  document.getElementById('editEodConfirmBtn').disabled = true;
+  openModal('editEodModal');
+}
+function checkEditEodForm() {
+  const editor = document.getElementById('editEodEditor').value.trim();
+  const reason = document.getElementById('editEodReason').value.trim();
+  const pin = document.getElementById('editEodPin').value;
+  document.getElementById('editEodConfirmBtn').disabled = !(editor && reason && pin.length === 4);
+}
+async function confirmEditEod() {
+  const pin = document.getElementById('editEodPin').value;
+  if (pin !== adminPin) {
+    document.getElementById('editEodError').textContent = '❌ PIN ไม่ถูกต้อง';
+    return;
+  }
+  const r = eodRecords.find(x => x.date === editEodTargetDate);
+  if (!r) return;
+
+  const newCashReal = parseFloat(document.getElementById('editEodCashReal').value) || 0;
+  const newDeposit = parseFloat(document.getElementById('editEodDeposit').value) || 0;
+  const newExpense = parseFloat(document.getElementById('editEodExpense').value) || 0;
+  const editor = document.getElementById('editEodEditor').value.trim();
+  const reason = document.getElementById('editEodReason').value.trim();
+
+  const patch = {
+    cash_real: newCashReal,
+    deposit: newDeposit,
+    expense: newExpense,
+    next_day: newCashReal - newDeposit - newExpense,
+    edited_by: editor,
+    edit_reason: reason
+  };
+
+  setSyncDot('loading');
+  try {
+    await sb('eod_records?date=eq.' + editEodTargetDate, { method: 'PATCH', body: patch, prefer: 'return=minimal' });
+    Object.assign(r, patch);
+    setSyncDot('ok');
+    closeModal('editEodModal');
+    renderEODHistory();
+    showToast('✅ แก้ไขปิดยอดแล้ว โดย ' + editor);
+  } catch(e) {
+    setSyncDot('err');
+    document.getElementById('editEodError').textContent = '❌ บันทึกไม่สำเร็จ: ' + e.message;
+  }
 }
 
 // ============ RAW DATA ============
