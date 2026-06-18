@@ -233,6 +233,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .stack-legend-label{color:var(--brown);font-weight:600;flex:1}
 .stack-legend-val{color:var(--brown-mid);font-weight:800;font-size:12px}
 .stack-legend-extra{color:var(--gray);font-size:10px;min-width:55px;text-align:right}
+.h-bar-chart{display:flex;align-items:flex-end;gap:3px;height:110px;padding-bottom:18px;overflow-x:auto}
+.h-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:22px;gap:2px;height:100%}
+.h-bar-val{font-size:8px;color:var(--brown-mid);font-weight:700;text-align:center;min-height:12px;word-break:break-all;line-height:1.1}
+.h-bar-track{flex:1;width:100%;display:flex;align-items:flex-end;background:var(--gray-light);border-radius:4px 4px 0 0;overflow:hidden}
+.h-bar-fill{width:100%;background:#EDE7D9;border-radius:4px 4px 0 0;transition:height .3s}
+.h-bar-fill.active{background:var(--banana)}
+.h-bar-label{font-size:9px;color:var(--gray);font-weight:600;margin-top:2px}
 .dash-section-title{font-size:12px;font-weight:700;color:var(--brown);margin-bottom:10px}
 .dash-tabs{display:flex;gap:5px;margin-bottom:10px}
 .dash-tab{padding:5px 10px;border:none;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray)}
@@ -418,6 +425,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <button class="filter-btn outline" onclick="setF7()">7 วัน</button>
       <button class="filter-btn outline" onclick="setF30()">30 วัน</button>
       <button class="filter-btn outline" onclick="setFAll()">ทั้งหมด</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <div class="dash-tabs" id="viewModeToggle">
+        <button class="dash-tab active" id="viewMoney" onclick="viewMode='money';updateViewToggle();renderDashboard()">฿ ยอดเงิน</button>
+        <button class="dash-tab" id="viewCount" onclick="viewMode='count';updateViewToggle();renderDashboard()"># จำนวน</button>
+      </div>
     </div>
     <div id="dashContent"></div>
   </div>
@@ -797,8 +810,7 @@ async function saveEODDB(r) {
   await sb('eod_records', {
     method: 'POST',
     body: r,
-    prefer: 'return=minimal',
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    prefer: 'resolution=merge-duplicates,return=minimal'
   });
 }
 
@@ -1301,6 +1313,11 @@ async function doVoid() {
 
 // ============ DASHBOARD ============
 function toYMD(d) { return d.toISOString().slice(0,10); }
+function updateViewToggle() {
+  document.getElementById('viewMoney').classList.toggle('active', viewMode==='money');
+  document.getElementById('viewCount').classList.toggle('active', viewMode==='count');
+}
+
 function setFToday() { const t=toYMD(new Date()); document.getElementById('filterFrom').value=t; document.getElementById('filterTo').value=t; renderDashboard(); }
 function setF7() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
 function setF30() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-29); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
@@ -1311,8 +1328,7 @@ function getFilteredOrders() {
   return orders.filter(o => { const d=toYMD(new Date(o.timestamp)); return (!from||d>=from)&&(!to||d<=to)&&!o.voided; });
 }
 
-let dashMode = 'money'; // 'money' or 'count'
-let trendMode = 'money'; // 'money' or 'count' for trend line
+let viewMode = 'money'; // single toggle controls all dashboard visuals
 
 function renderDashboard() {
   const f = getFilteredOrders();
@@ -1366,38 +1382,31 @@ function renderDashboard() {
 
     ${isMultiDay ? `
     <div class="dash-section">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
-        <div class="dash-section-title" style="margin:0">📈 เทรนด์ยอดขายรายวัน</div>
-        <div class="dash-tabs">
-          <button class="dash-tab ${trendMode==='money'?'active':''}" onclick="trendMode='money';renderDashboard()">฿ ยอดเงิน</button>
-          <button class="dash-tab ${trendMode==='count'?'active':''}" onclick="trendMode='count';renderDashboard()"># จำนวน</button>
-        </div>
-      </div>
-      ${renderTrendLine(sortedDays, dayMap, trendMode)}
+      <div class="dash-section-title" style="margin-bottom:9px">📈 เทรนด์ยอดขายรายวัน</div>
+      ${renderTrendLine(sortedDays, dayMap, viewMode)}
     </div>` : ''}
 
     <div class="dash-section">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
-        <div class="dash-section-title" style="margin:0">📊 แยกตามหัวข้อ</div>
-        <div class="dash-tabs">
-          <button class="dash-tab ${dashMode==='money'?'active':''}" onclick="dashMode='money';renderDashboard()">฿ ยอดเงิน</button>
-          <button class="dash-tab ${dashMode==='count'?'active':''}" onclick="dashMode='count';renderDashboard()"># จำนวน</button>
-        </div>
-      </div>
+      <div class="dash-section-title" style="margin-bottom:9px">🕐 ยอดขายรายชั่วโมง</div>
+      ${renderHourlyBars(f, viewMode)}
+    </div>
+
+    <div class="dash-section">
+      <div class="dash-section-title" style="margin-bottom:9px">📊 แยกตามหัวข้อ</div>
 
       <div style="font-size:11px;font-weight:700;color:var(--gray);margin:8px 0 6px;text-transform:uppercase;letter-spacing:.8px">🏷️ โปร vs ปกติ</div>
       ${renderStackedBar([
-          {label:'🎁 โปร', value: dashMode==='money'?promoRev:promoOrders.length, color:'#C62828', extra: dashMode==='money'?promoOrders.length+' บิล':'฿'+promoRev.toLocaleString()},
-          {label:'💰 ปกติ', value: dashMode==='money'?normalRev:normalOrders.length, color:'#2E7D32', extra: dashMode==='money'?normalOrders.length+' บิล':'฿'+normalRev.toLocaleString()}
+          {label:'🎁 โปร', value: viewMode==='money'?promoRev:promoOrders.length, color:'#C62828', extra: viewMode==='money'?promoOrders.length+' บิล':'฿'+promoRev.toLocaleString()},
+          {label:'💰 ปกติ', value: viewMode==='money'?normalRev:normalOrders.length, color:'#2E7D32', extra: viewMode==='money'?normalOrders.length+' บิล':'฿'+normalRev.toLocaleString()}
         ])}
 
       <div style="font-size:11px;font-weight:700;color:var(--gray);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.8px">🍌 รสชาติ</div>
       ${flavors.length
         ? renderStackedBar(flavors.map(([n,d],i) => ({
             label: d.emoji+' '+n,
-            value: dashMode==='money'?d.revenue:d.qty,
+            value: viewMode==='money'?d.revenue:d.qty,
             color: COLORS[i%COLORS.length],
-            extra: dashMode==='money'? d.qty+' ถุง' : '฿'+d.revenue.toLocaleString()
+            extra: viewMode==='money'? d.qty+' ถุง' : '฿'+d.revenue.toLocaleString()
           })))
         : '<div style="color:var(--gray);font-size:12px">ยังไม่มีข้อมูล</div>'}
 
@@ -1405,7 +1414,7 @@ function renderDashboard() {
       ${renderStackedBar(methodData.map(m => {
           const v = f.filter(o=>o.method===m.key).reduce((s,o)=>s+o.total,0);
           const c = f.filter(o=>o.method===m.key).length;
-          return {label:m.label, value: dashMode==='money'?v:c, color:m.color, extra: dashMode==='money'?c+' บิล':'฿'+v.toLocaleString()};
+          return {label:m.label, value: viewMode==='money'?v:c, color:m.color, extra: viewMode==='money'?c+' บิล':'฿'+v.toLocaleString()};
         }))}
     </div>`;
 }
@@ -1732,6 +1741,51 @@ async function confirmEditEod() {
     setSyncDot('err');
     document.getElementById('editEodError').textContent = '❌ บันทึกไม่สำเร็จ: ' + e.message;
   }
+}
+
+// ---- Hourly bar chart ----
+function renderHourlyBars(orders, mode) {
+  if (!orders.length) return '<div style="color:var(--gray);font-size:12px;text-align:center;padding:8px">ยังไม่มีข้อมูล</div>';
+
+  // Build hourly buckets 0-23
+  const hourData = Array.from({length:24}, (_,h) => ({h, revenue:0, count:0, qty:0}));
+  orders.forEach(o => {
+    const h = new Date(o.timestamp).getHours();
+    hourData[h].revenue += o.total;
+    hourData[h].count++;
+    hourData[h].qty += o.items.reduce((s,i)=>s+i.qty,0);
+  });
+
+  // Find active hour range (trim leading/trailing zeros)
+  let first = 23, last = 0;
+  hourData.forEach((d,h) => { if(d.count>0){ first=Math.min(first,h); last=Math.max(last,h); } });
+  if (first > last) return '<div style="color:var(--gray);font-size:12px;text-align:center;padding:8px">ยังไม่มีข้อมูล</div>';
+
+  // Show 1 hour before and after for context
+  first = Math.max(0, first-1);
+  last = Math.min(23, last+1);
+  const visible = hourData.slice(first, last+1);
+
+  const values = visible.map(d => mode==='money' ? d.revenue : mode==='count' ? d.count : d.qty);
+  const maxV = Math.max(...values, 1);
+
+  const bars = visible.map(d => {
+    const v = mode==='money' ? d.revenue : d.count;
+    const pct = Math.round(v/maxV*100);
+    const label = mode==='money' ? (v>0?'฿'+v.toLocaleString():'') : (v>0?v+'':'');
+    const active = v > 0;
+    return `
+      <div class="h-bar-col">
+        <div class="h-bar-val">${label}</div>
+        <div class="h-bar-track">
+          <div class="h-bar-fill ${active?'active':''}" style="height:${pct}%"></div>
+        </div>
+        <div class="h-bar-label">${d.h}</div>
+      </div>`;
+  }).join('');
+
+  return `<div class="h-bar-chart">${bars}</div>
+    <div style="font-size:10px;color:var(--gray);text-align:center;margin-top:4px">ชั่วโมง (ตัวเลข = ช่วง hh:00–hh:59)</div>`;
 }
 
 // ============ RAW DATA ============
