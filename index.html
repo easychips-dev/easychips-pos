@@ -1233,7 +1233,8 @@ function updateSummaryBar() {
   document.getElementById('todaySales').textContent = tod.length;
   document.getElementById('todayTotal').textContent = '฿' + tod.reduce((s,o) => s+o.total, 0).toLocaleString();
   ['qr','cash','line','shopee','gov'].forEach(m => {
-    const el = document.getElementById('today' + m.charAt(0).toUpperCase() + m.slice(1));
+    const idMap = {qr:'todayQR', cash:'todayCash', line:'todayLine', shopee:'todayShopee', gov:'todayGov'};
+    const el = document.getElementById(idMap[m]);
     if (el) el.textContent = tod.filter(o => o.method === m).length;
   });
 }
