@@ -1750,48 +1750,108 @@ async function confirmEditEod() {
 }
 
 // ---- Hourly bar chart ----
+let hourlyChartInstance = null;
+
 function renderHourlyBars(orders, mode) {
   if (!orders.length) return '<div style="color:var(--gray);font-size:12px;text-align:center;padding:8px">ยังไม่มีข้อมูล</div>';
 
-  // Build hourly buckets 0-23
-  const hourData = Array.from({length:24}, (_,h) => ({h, revenue:0, count:0, qty:0}));
+  const hourData = Array.from({length:24}, (_,h) => ({h, revenue:0, count:0}));
   orders.forEach(o => {
     const h = new Date(o.timestamp).getHours();
     hourData[h].revenue += o.total;
     hourData[h].count++;
-    hourData[h].qty += o.items.reduce((s,i)=>s+i.qty,0);
   });
 
-  // Find active hour range (trim leading/trailing zeros)
   let first = 23, last = 0;
   hourData.forEach((d,h) => { if(d.count>0){ first=Math.min(first,h); last=Math.max(last,h); } });
   if (first > last) return '<div style="color:var(--gray);font-size:12px;text-align:center;padding:8px">ยังไม่มีข้อมูล</div>';
 
-  // Show 1 hour before and after for context
   first = Math.max(0, first-1);
   last = Math.min(23, last+1);
   const visible = hourData.slice(first, last+1);
+  const labels = visible.map(d => d.h + ':00');
+  const hourlyVals = visible.map(d => mode==='money' ? d.revenue : d.count);
+  const cumVals = hourlyVals.reduce((acc,v,i) => { acc.push((acc[i-1]||0)+v); return acc; }, []);
+  const unit = mode==='money' ? '฿' : '';
+  const suffix = mode==='money' ? '' : ' บิล';
 
-  const values = visible.map(d => mode==='money' ? d.revenue : mode==='count' ? d.count : d.qty);
-  const maxV = Math.max(...values, 1);
+  const html = `
+    <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;color:var(--gray)">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#F5C518;display:inline-block"></span>ยอดรายชั่วโมง</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:20px;height:2px;background:#7A4210;display:inline-block"></span>ยอดสะสม</span>
+    </div>
+    <div style="position:relative;width:100%;height:220px">
+      <canvas id="hourlyComboChart" role="img" aria-label="Hourly sales bar chart with cumulative line">ยอดขายรายชั่วโมงพร้อมเส้นสะสม</canvas>
+    </div>`;
 
-  const bars = visible.map(d => {
-    const v = mode==='money' ? d.revenue : d.count;
-    const pct = Math.round(v/maxV*100);
-    const label = mode==='money' ? (v>0?'฿'+v.toLocaleString():'') : (v>0?v+'':'');
-    const active = v > 0;
-    return `
-      <div class="h-bar-col">
-        <div class="h-bar-val">${label}</div>
-        <div class="h-bar-track">
-          <div class="h-bar-fill ${active?'active':''}" style="height:${pct}%"></div>
-        </div>
-        <div class="h-bar-label">${d.h}</div>
-      </div>`;
-  }).join('');
+  setTimeout(() => {
+    const canvas = document.getElementById('hourlyComboChart');
+    if (!canvas) return;
+    if (hourlyChartInstance) { hourlyChartInstance.destroy(); hourlyChartInstance = null; }
+    if (!window.Chart) return;
+    hourlyChartInstance = new Chart(canvas, {
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'รายชั่วโมง',
+            data: hourlyVals,
+            backgroundColor: '#F5C518',
+            borderRadius: 4,
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            type: 'line',
+            label: 'สะสม',
+            data: cumVals,
+            borderColor: '#7A4210',
+            backgroundColor: 'rgba(122,66,16,0.07)',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#7A4210',
+            pointRadius: 3.5,
+            fill: true,
+            tension: 0.3,
+            yAxisID: 'y2',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ctx.datasetIndex===0
+                ? ' ชั่วโมงนี้: ' + unit + ctx.raw.toLocaleString() + suffix
+                : ' ยอดสะสม: ' + unit + ctx.raw.toLocaleString() + suffix
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { font:{size:11}, autoSkip: false, maxRotation: 0 }, grid: { display:false } },
+          y: {
+            type: 'linear', position: 'left',
+            ticks: { font:{size:10}, callback: v => unit+v.toLocaleString() },
+            grid: { color: 'rgba(0,0,0,0.05)' },
+            title: { display:true, text:'รายชั่วโมง', font:{size:10}, color:'#888' }
+          },
+          y2: {
+            type: 'linear', position: 'right',
+            ticks: { font:{size:10}, callback: v => unit+v.toLocaleString() },
+            grid: { drawOnChartArea: false },
+            title: { display:true, text:'ยอดสะสม', font:{size:10}, color:'#7A4210' }
+          }
+        }
+      }
+    });
+  }, 50);
 
-  return `<div class="h-bar-chart">${bars}</div>
-    <div style="font-size:10px;color:var(--gray);text-align:center;margin-top:4px">ชั่วโมง (ตัวเลข = ช่วง hh:00–hh:59)</div>`;
+  return html;
 }
 
 // ============ RAW DATA ============
@@ -1974,5 +2034,6 @@ function showToast(msg) {
 
 init();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </body>
 </html>
