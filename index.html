@@ -109,6 +109,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .pay-btn.line{background:var(--line);color:white}
 .pay-btn.shopee{background:#EE4D2D;color:white}
 .pay-btn.gov{background:var(--blue);color:white}
+.pay-btn.tiktok{background:#000000;color:white}
 
 /* CASH QUICK BUTTONS */
 .cash-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
@@ -202,6 +203,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .hmethod.line{background:var(--line-light);color:var(--line)}
 .hmethod.shopee{background:#FFF0ED;color:#EE4D2D}
 .hmethod.gov{background:var(--blue-light);color:var(--blue)}
+.hmethod.tiktok{background:#F0F0F0;color:#000000}
 .hitems{font-size:11px;color:var(--gray);margin-bottom:5px;line-height:1.5}
 .hfoot{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .htime{font-size:10px;color:var(--gray)}
@@ -362,7 +364,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 <div class="summary-bar">
   <div>วันนี้: <span id="todaySales">0</span> บิล</div>
   <div>ยอด: <span id="todayTotal">฿0</span></div>
-  <div>QR:<span id="todayQR">0</span> สด:<span id="todayCash">0</span> Line:<span id="todayLine">0</span> Shopee:<span id="todayShopee">0</span> รัฐ:<span id="todayGov">0</span></div>
+  <div>QR:<span id="todayQR">0</span> สด:<span id="todayCash">0</span> Line:<span id="todayLine">0</span> Shopee:<span id="todayShopee">0</span> TikTok:<span id="todayTiktok">0</span> รัฐ:<span id="todayGov">0</span></div>
 </div>
 
 <!-- POS TAB -->
@@ -407,6 +409,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       </div>
       <div class="pay-grid-2" style="margin-top:5px">
         <button class="pay-btn shopee" onclick="openPayment('shopee')"><span class="pi">🛍️</span>Shopee</button>
+        <button class="pay-btn tiktok" onclick="openPayment('tiktok')"><span class="pi">🎵</span>TikTok</button>
         <button class="pay-btn gov" onclick="openPayment('gov')"><span class="pi">🏛️</span>โครงการรัฐ</button>
       </div>
     </div>
@@ -461,6 +464,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div class="eod-row"><span class="eod-lbl">— QR</span><input class="eod-input auto" id="eodQRPOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— Line OA</span><input class="eod-input auto" id="eodLinePOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— Shopee</span><input class="eod-input auto" id="eodShopeePOS" readonly></div>
+      <div class="eod-row"><span class="eod-lbl">— TikTok</span><input class="eod-input auto" id="eodTiktokPOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— โครงการรัฐ</span><input class="eod-input auto" id="eodGovPOS" readonly></div>
       <div class="eod-div"></div>
 
@@ -752,7 +756,7 @@ async function sb(path, opts={}) {
 }
 
 // ============ STATE ============
-const METHOD_LABELS = {cash:'💵 เงินสด',qr:'📱 QR',line:'💬 Line OA',shopee:'🛍️ Shopee',gov:'🏛️ โครงการรัฐ'};
+const METHOD_LABELS = {cash:'💵 เงินสด',qr:'📱 QR',line:'💬 Line OA',shopee:'🛍️ Shopee',tiktok:'🎵 TikTok',gov:'🏛️ โครงการรัฐ'};
 const METHOD_ICONS  = {cash:'💵',qr:'📷',line:'💬',shopee:'🛍️',gov:'🏛️'};
 const PROMO_SET_PRICE = 100;
 const PROMO_UNIT_PRICE = 39;
@@ -1126,7 +1130,7 @@ function openPayment(method) {
     updateCashDisplay();
     openModal('cashModal');
   } else {
-    const subs = {qr:'สแกน QR เพื่อชำระเงิน',line:'แจ้งยอดผ่าน Line OA',shopee:'ชำระผ่าน Shopee',gov:'ชำระผ่านโครงการรัฐ'};
+    const subs = {qr:'สแกน QR เพื่อชำระเงิน',line:'แจ้งยอดผ่าน Line OA',shopee:'ชำระผ่าน Shopee',tiktok:'ชำระผ่าน TikTok',gov:'ชำระผ่านโครงการรัฐ'};
     document.getElementById('qrModalTitle').textContent = 'ชำระผ่าน ' + METHOD_LABELS[method];
     document.getElementById('qrModalIcon').textContent = METHOD_ICONS[method];
     document.getElementById('qrAmount').textContent = '฿' + currentTotal.toLocaleString();
@@ -1232,8 +1236,8 @@ function updateSummaryBar() {
   const tod = orders.filter(o => new Date(o.timestamp).toDateString() === today && !o.voided);
   document.getElementById('todaySales').textContent = tod.length;
   document.getElementById('todayTotal').textContent = '฿' + tod.reduce((s,o) => s+o.total, 0).toLocaleString();
-  ['qr','cash','line','shopee','gov'].forEach(m => {
-    const idMap = {qr:'todayQR', cash:'todayCash', line:'todayLine', shopee:'todayShopee', gov:'todayGov'};
+  ['qr','cash','line','shopee','tiktok','gov'].forEach(m => {
+    const idMap = {qr:'todayQR', cash:'todayCash', line:'todayLine', shopee:'todayShopee', tiktok:'todayTiktok', gov:'todayGov'};
     const el = document.getElementById(idMap[m]);
     if (el) el.textContent = tod.filter(o => o.method === m).length;
   });
@@ -1357,6 +1361,7 @@ function renderDashboard() {
     {key:'qr',label:'📱 QR',color:'#F5C518'},
     {key:'line',label:'💬 Line OA',color:'#06C755'},
     {key:'shopee',label:'🛍️ Shopee',color:'#EE4D2D'},
+    {key:'tiktok',label:'🎵 TikTok',color:'#000000'},
     {key:'gov',label:'🏛️ โครงการรัฐ',color:'#1565C0'},
   ];
   const maxMm = Math.max(...methodData.map(m=>f.filter(o=>o.method===m.key).reduce((s,o)=>s+o.total,0)),1);
@@ -1507,7 +1512,7 @@ let editEodTargetDate = '';
 function initEOD() {
   document.getElementById('eodDate').textContent = new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
-  const totals = {cash:0,qr:0,line:0,shopee:0,gov:0};
+  const totals = {cash:0,qr:0,line:0,shopee:0,tiktok:0,gov:0};
   tod.forEach(o=>totals[o.method]=(totals[o.method]||0)+o.total);
   const grand = Object.values(totals).reduce((a,b)=>a+b,0);
   document.getElementById('eodSales').value = '฿' + grand.toLocaleString();
@@ -1515,6 +1520,7 @@ function initEOD() {
   document.getElementById('eodQRPOS').value = '฿' + totals.qr.toLocaleString();
   document.getElementById('eodLinePOS').value = '฿' + totals.line.toLocaleString();
   document.getElementById('eodShopeePOS').value = '฿' + totals.shopee.toLocaleString();
+  document.getElementById('eodTiktokPOS').value = '฿' + totals.tiktok.toLocaleString();
   document.getElementById('eodGovPOS').value = '฿' + totals.gov.toLocaleString();
 
   // Build banknote count grid
@@ -1599,7 +1605,7 @@ async function saveEOD() {
   if (!staffName) { errEl.textContent = '⚠️ กรุณาระบุชื่อผู้ปิดยอด'; return; }
 
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
-  const totals = {cash:0,qr:0,line:0,shopee:0,gov:0};
+  const totals = {cash:0,qr:0,line:0,shopee:0,tiktok:0,gov:0};
   tod.forEach(o=>totals[o.method]=(totals[o.method]||0)+o.total);
 
   const opening = getOpeningBalanceToday();
@@ -1679,6 +1685,7 @@ function renderEODHistory() {
         <span>QR: ฿${(r.by_method.qr||0).toLocaleString()}</span>
         <span>Line: ฿${(r.by_method.line||0).toLocaleString()}</span>
         <span>Shopee: ฿${(r.by_method.shopee||0).toLocaleString()}</span>
+        <span>TikTok: ฿${(r.by_method.tiktok||0).toLocaleString()}</span>
         <span>รัฐ: ฿${(r.by_method.gov||0).toLocaleString()}</span>
         <span>ฝากแบงค์: ฿${(r.deposit||0).toLocaleString()}</span>
         <span style="color:var(--green);font-weight:700">ตั้งต้นพรุ่งนี้: ฿${Math.max(0,r.next_day||0).toLocaleString()}</span>
