@@ -1438,6 +1438,35 @@ function getCompareRange() {
 function getOrdersInRange(from, to) {
   return orders.filter(o => { const d=toYMD(new Date(o.timestamp)); return (!from||d>=from)&&(!to||d<=to)&&!o.voided; });
 }
+// Build a Date for `ymd` but using the hour/min/sec of `refDate` — used to cut off
+// a comparison day at "the same time as right now" so partial-today is fairly compared.
+function dateWithTimeOfDay(ymd, refDate) {
+  const [y,m,d] = ymd.split('-').map(Number);
+  return new Date(y, m-1, d, refDate.getHours(), refDate.getMinutes(), refDate.getSeconds(), refDate.getMilliseconds());
+}
+// Fetch comparison-period orders, but if a day in the CURRENT range is today (i.e. still in
+// progress / partial data), its mapped comparison day is cut off at the same time-of-day —
+// otherwise comparing a full finished day vs. a still-running today wouldn't be a fair fight.
+function getCompareOrdersFair(from, to, offsetDays) {
+  const todayStr = toYMD(new Date());
+  const now = new Date();
+  let result = [];
+  let d = from;
+  let guard = 0;
+  while (d <= to && guard < 400) {
+    const cmpDate = shiftYMD(d, -offsetDays);
+    const dayOrders = orders.filter(o => !o.voided && toYMD(new Date(o.timestamp)) === cmpDate);
+    if (d === todayStr) {
+      const cutoff = dateWithTimeOfDay(cmpDate, now);
+      result = result.concat(dayOrders.filter(o => new Date(o.timestamp) <= cutoff));
+    } else {
+      result = result.concat(dayOrders);
+    }
+    d = shiftYMD(d, 1);
+    guard++;
+  }
+  return result;
+}
 
 function setFToday() { const t=toYMD(new Date()); document.getElementById('filterFrom').value=t; document.getElementById('filterTo').value=t; renderDashboard(); }
 function setF7() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
@@ -1496,8 +1525,11 @@ function renderDashboard() {
   // ---- Compare data (auto-calculated, no user date input needed) ----
   const cmpRange = getCompareRange();
   let cmpOrders = [], cmpDayMap = {}, cmpSortedDays = [], cmpTotal = 0, cmpQty = 0, cmpBills = 0;
+  const todayStr = toYMD(new Date());
+  const includesPartialToday = !!(to && to === todayStr); // selected range's last day is still in progress
   if (cmpRange) {
-    cmpOrders = getOrdersInRange(cmpRange.cFrom, cmpRange.cTo);
+    const offset = compareMode === 'week' ? 7 : 1;
+    cmpOrders = getCompareOrdersFair(from, to, offset);
     cmpOrders.forEach(o => {
       const d = toYMD(new Date(o.timestamp));
       if (!cmpDayMap[d]) cmpDayMap[d] = {revenue:0, qty:0};
@@ -1512,11 +1544,15 @@ function renderDashboard() {
   const isMultiDay = sortedDays.length > 1 || (cmpRange && cmpSortedDays.length > 1);
 
   const cmpLabel = compareMode === 'week' ? 'สัปดาห์ก่อน' : 'เมื่อวาน';
+  const nowTimeStr = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const cmpLabelFull = includesPartialToday ? `${cmpLabel} ถึงเวลา ${nowTimeStr}` : cmpLabel;
 
   const tagEl = document.getElementById('cmpRangeTag');
   if (cmpRange) {
     tagEl.style.display = 'inline-flex';
-    tagEl.textContent = `📅 ${cmpLabel} = ${fmtRangeTH(cmpRange.cFrom, cmpRange.cTo)}`;
+    tagEl.textContent = includesPartialToday
+      ? `📅 ${cmpLabel} = ${fmtRangeTH(cmpRange.cFrom, cmpRange.cTo)} (ตัดที่ ${nowTimeStr} น. ให้แฟร์กับวันนี้)`
+      : `📅 ${cmpLabel} = ${fmtRangeTH(cmpRange.cFrom, cmpRange.cTo)}`;
   } else {
     tagEl.style.display = 'none';
   }
@@ -1533,16 +1569,17 @@ function renderDashboard() {
       <div class="cmp-card">
         <div class="cmp-label">ยอดขาย</div>
         <div class="cmp-value">฿${total.toLocaleString()}</div>
-        <div class="cmp-vs">vs ฿${cmpTotal.toLocaleString()} (${cmpLabel})</div>
+        <div class="cmp-vs">vs ฿${cmpTotal.toLocaleString()} (${cmpLabelFull})</div>
         ${deltaPill(total, cmpTotal)}
       </div>
       <div class="cmp-card">
         <div class="cmp-label">จำนวน${viewMode==='count'?' (ถุง)':'บิล'}</div>
         <div class="cmp-value">${(viewMode==='count'?totalQty:bills).toLocaleString()}</div>
-        <div class="cmp-vs">vs ${(viewMode==='count'?cmpQty:cmpBills).toLocaleString()} (${cmpLabel})</div>
+        <div class="cmp-vs">vs ${(viewMode==='count'?cmpQty:cmpBills).toLocaleString()} (${cmpLabelFull})</div>
         ${deltaPill(viewMode==='count'?totalQty:bills, viewMode==='count'?cmpQty:cmpBills)}
       </div>
     </div>` : '';
+
 
   document.getElementById('dashContent').innerHTML = `
     <div class="kpi-grid">
@@ -1557,12 +1594,12 @@ function renderDashboard() {
     ${isMultiDay ? `
     <div class="dash-section">
       <div class="dash-section-title" style="margin-bottom:9px">📈 เทรนด์ยอดขายรายวัน</div>
-      ${renderTrendLine(sortedDays, dayMap, viewMode, cmpRange ? cmpSortedDays : null, cmpRange ? cmpDayMap : null, cmpLabel)}
+      ${renderTrendLine(sortedDays, dayMap, viewMode, cmpRange ? cmpSortedDays : null, cmpRange ? cmpDayMap : null, cmpLabelFull)}
     </div>` : ''}
 
     <div class="dash-section">
       <div class="dash-section-title" style="margin-bottom:9px">🕐 ยอดขายรายชั่วโมง</div>
-      ${renderHourlyBars(f, viewMode, cmpRange ? cmpOrders : null, cmpLabel)}
+      ${renderHourlyBars(f, viewMode, cmpRange ? cmpOrders : null, cmpLabelFull)}
     </div>
 
     <div class="dash-section">
