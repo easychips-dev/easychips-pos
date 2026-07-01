@@ -99,8 +99,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .sum-total .sum-label{font-size:14px;font-weight:800;color:var(--brown)}
 .sum-total .sum-val{font-size:18px;font-weight:800;color:var(--brown-mid)}
 .pay-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin:8px 0 5px}
-.pay-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:4px}
-.pay-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.pay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:5px;margin-bottom:4px}
 .pay-btn{padding:9px 3px;border:none;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s;display:flex;flex-direction:column;align-items:center;gap:2px}
 .pay-btn:active{transform:scale(.94)}
 .pay-btn .pi{font-size:16px}
@@ -259,6 +258,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .dash-tab{padding:5px 10px;border:none;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray)}
 .dash-tab.active{background:var(--banana);color:var(--brown)}
 
+.channel-toggle{display:flex;gap:6px;margin-bottom:10px}
+.channel-btn{flex:1;padding:9px 6px;border:1.5px solid #EDE7D9;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--gray)}
+#channelStoreBtn.active{background:var(--brown-mid);border-color:var(--brown-mid);color:white}
+#channelLineBtn.active{background:var(--line);border-color:var(--line);color:white}
+#channelEcomBtn.active{background:#EE4D2D;border-color:#EE4D2D;color:white}
+
 /* COMPARE */
 .compare-btn{padding:7px 11px;border:1.5px solid #EDE7D9;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--gray);display:flex;align-items:center;gap:5px}
 .compare-btn.active{background:var(--blue-light);border-color:var(--blue);color:var(--blue)}
@@ -275,6 +280,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .cmp-legend-row span{display:flex;align-items:center;gap:4px}
 .cmp-dot-line{width:18px;height:2px;display:inline-block}
 .cmp-range-tag{display:inline-flex;align-items:center;gap:5px;background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;margin-left:2px}
+.chfilter-btn{padding:5px 10px;border:1.5px solid #EDE7D9;border-radius:20px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:white;color:var(--gray)}
+.chfilter-btn.active{background:var(--brown-mid);border-color:var(--brown-mid);color:white}
 .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .bar-label{font-size:11px;color:var(--brown);min-width:82px;font-weight:600;line-height:1.3}
 .bar-track{flex:1;background:var(--gray-light);border-radius:20px;height:13px;overflow:hidden}
@@ -393,13 +400,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 <div class="summary-bar">
   <div>วันนี้: <span id="todaySales">0</span> บิล</div>
   <div>ยอด: <span id="todayTotal">฿0</span></div>
-  <div>QR:<span id="todayQR">0</span> สด:<span id="todayCash">0</span> Line:<span id="todayLine">0</span> Shopee:<span id="todayShopee">0</span> TikTok:<span id="todayTiktok">0</span> รัฐ:<span id="todayGov">0</span></div>
+  <div>🏪<span id="todayChStore">฿0</span> 💬<span id="todayChLine">฿0</span> 🛍️<span id="todayChEcom">฿0</span></div>
+  <div style="font-size:10px;opacity:.7">QR:<span id="todayQR">0</span> สด:<span id="todayCash">0</span> Line:<span id="todayLine">0</span> Shopee:<span id="todayShopee">0</span> TikTok:<span id="todayTiktok">0</span> รัฐ:<span id="todayGov">0</span></div>
 </div>
 
 <!-- POS TAB -->
 <div id="tab-pos" class="main">
   <div class="products-panel">
     <div class="section-label">สินค้า</div>
+    <div class="channel-toggle">
+      <button class="channel-btn active" id="channelStoreBtn" onclick="setChannel('store')">🏪 หน้าร้าน</button>
+      <button class="channel-btn" id="channelLineBtn" onclick="setChannel('line')">💬 Line OA</button>
+      <button class="channel-btn" id="channelEcomBtn" onclick="setChannel('ecom')">🛍️ E-com</button>
+    </div>
     <div class="products-grid" id="productsGrid"></div>
   </div>
   <div class="cart-panel">
@@ -411,7 +424,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div class="cart-empty"><span class="ei">🛒</span>กดสินค้าเพื่อเพิ่ม</div>
     </div>
     <div class="cart-footer">
-      <div class="promo-section">
+      <div class="promo-section" id="promoSection">
         <div class="promo-label">โปร 3 ถุง ฿100</div>
         <div class="promo-controls">
           <button class="promo-btn" id="promoBigBtn" onclick="tapPromo()" disabled>🎁 โปร 3 ถุง ฿100</button>
@@ -422,25 +435,22 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div class="divider"></div>
       <div class="sum-row"><span class="sum-label">ยอดสินค้า</span><span class="sum-val" id="subtotalDisplay">฿0</span></div>
       <div class="sum-row" id="promoRow" style="display:none"><span class="sum-label" style="color:var(--red)">ส่วนลดโปร (<span id="promoSetsLabel">0</span> เซ็ต)</span><span class="sum-val" id="promoDiscDisplay" style="color:var(--red)">-฿0</span></div>
-      <div class="eod-row" style="margin:5px 0 3px">
+      <div class="eod-row" id="shippingRow" style="margin:5px 0 3px">
         <span style="font-size:11px;color:var(--gray);min-width:65px">ค่าขนส่ง</span>
         <input type="number" id="shippingInput" placeholder="0" min="0" oninput="updateSummary()"
           style="flex:1;border:1.5px solid #EDE7D9;border-radius:8px;padding:5px 8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--brown);text-align:right;outline:none;background:var(--gray-light)">
         <span style="font-size:11px;color:var(--gray)">฿</span>
       </div>
+      <div class="eod-row" id="discountRow" style="margin:5px 0 3px">
+        <span style="font-size:11px;color:var(--gray);min-width:65px">ส่วนลดท้ายบิล</span>
+        <input type="number" id="discountInput" placeholder="0" min="0" oninput="updateSummary()"
+          style="flex:1;border:1.5px solid #EDE7D9;border-radius:8px;padding:5px 8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-align:right;outline:none;background:var(--gray-light)">
+        <span style="font-size:11px;color:var(--gray)">฿</span>
+      </div>
       <div class="divider"></div>
       <div class="sum-row sum-total"><span class="sum-label">ยอดรวม</span><span class="sum-val" id="totalDisplay">฿0</span></div>
       <div class="pay-label">ช่องทางชำระเงิน</div>
-      <div class="pay-grid">
-        <button class="pay-btn cash" onclick="openPayment('cash')"><span class="pi">💵</span>เงินสด</button>
-        <button class="pay-btn qr" onclick="openPayment('qr')"><span class="pi">📱</span>QR</button>
-        <button class="pay-btn line" onclick="openPayment('line')"><span class="pi">💬</span>Line OA</button>
-      </div>
-      <div class="pay-grid-2" style="margin-top:5px">
-        <button class="pay-btn shopee" onclick="openPayment('shopee')"><span class="pi">🛍️</span>Shopee</button>
-        <button class="pay-btn tiktok" onclick="openPayment('tiktok')"><span class="pi">🎵</span>TikTok</button>
-        <button class="pay-btn gov" onclick="openPayment('gov')"><span class="pi">🏛️</span>โครงการรัฐ</button>
-      </div>
+      <div class="pay-grid" id="payGrid"></div>
     </div>
   </div>
 </div>
@@ -462,6 +472,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <button class="compare-btn" id="cmpWeekBtn" onclick="toggleCompare('week')">🔁 เทียบสัปดาห์ก่อน</button>
       <button class="compare-btn" id="cmpYestBtn" onclick="toggleCompare('yesterday')">🔁 เทียบเมื่อวาน</button>
       <span class="cmp-range-tag" id="cmpRangeTag" style="display:none"></span>
+    </div>
+    <div class="dash-filter" style="margin-top:-3px;margin-bottom:13px">
+      <span style="font-size:11px;color:var(--gray);font-weight:700">ช่องทาง:</span>
+      <button class="chfilter-btn active" id="chfAllBtn" onclick="setChannelFilter('all')">ทั้งหมด</button>
+      <button class="chfilter-btn" id="chfStoreBtn" onclick="setChannelFilter('store')">🏪 หน้าร้าน</button>
+      <button class="chfilter-btn" id="chfLineBtn" onclick="setChannelFilter('line')">💬 Line OA</button>
+      <button class="chfilter-btn" id="chfEcomBtn" onclick="setChannelFilter('ecom')">🛍️ E-com</button>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
       <div class="dash-tabs" id="viewModeToggle">
@@ -506,6 +523,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       </div>
 
       <div class="eod-row"><span class="eod-lbl">ยอดขายรวม (จาก POS)</span><input class="eod-input auto" id="eodSales" readonly></div>
+      <div class="eod-row" style="margin-top:2px"><span class="eod-lbl">🏪 หน้าร้าน</span><input class="eod-input auto" id="eodChStore" readonly></div>
+      <div class="eod-row"><span class="eod-lbl">💬 Line OA</span><input class="eod-input auto" id="eodChLine" readonly></div>
+      <div class="eod-row"><span class="eod-lbl">🛍️ E-com</span><input class="eod-input auto" id="eodChEcom" readonly></div>
+      <div style="font-size:10px;color:var(--gray);margin:2px 0 6px">แยกตามวิธีจ่าย:</div>
       <div class="eod-row"><span class="eod-lbl">— เงินสด</span><input class="eod-input auto" id="eodCashPOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— QR</span><input class="eod-input auto" id="eodQRPOS" readonly></div>
       <div class="eod-row"><span class="eod-lbl">— Line OA</span><input class="eod-input auto" id="eodLinePOS" readonly></div>
@@ -810,6 +831,23 @@ const PROMO_SET_SIZE = 3;
 
 let products = [], orders = [], eodRecords = [];
 let cart = [], currentTotal = 0, pendingMethod = '';
+let salesChannel = 'store'; // 'store' | 'line' | 'ecom'
+const CHANNELS = {
+  store: { key:'store', label:'หน้าร้าน',  icon:'🏪', price:39, hasShipping:false, hasPromo:true,  hasDiscount:false, methods:['cash','qr','gov'] },
+  line:  { key:'line',  label:'Line OA',  icon:'💬', price:39, hasShipping:true,  hasPromo:true,  hasDiscount:false, methods:['line'] },
+  ecom:  { key:'ecom',  label:'E-com',    icon:'🛍️', price:49, hasShipping:true,  hasPromo:false, hasDiscount:true,  methods:['shopee','tiktok'] }
+};
+function priceFor(p) {
+  // E-com is a flat rate regardless of which flavor; store/line use the product's own price (normally 39)
+  return salesChannel === 'ecom' ? CHANNELS.ecom.price : (parseFloat(p.price) || CHANNELS[salesChannel].price);
+}
+// Map a payment method back to its channel — used for orders saved before the `channel` field existed
+function channelFromMethod(method) {
+  if (method === 'line') return 'line';
+  if (method === 'shopee' || method === 'tiktok') return 'ecom';
+  return 'store'; // cash, qr, gov
+}
+function orderChannel(o) { return o.channel || channelFromMethod(o.method); }
 let promoActive = false, promoSets = 0;
 let cashReceived = 0;
 let cashKeyBuffer = '';
@@ -924,6 +962,7 @@ async function init() {
       loadingEl.style.display = 'none';
       renderProducts();
       renderCart();
+      applyChannelUI();
       updateSummary();
       updateSummaryBar();
       setInterval(async () => {
@@ -1012,6 +1051,42 @@ function checkPinGate() {
   }
 }
 
+function setChannel(ch) {
+  if (salesChannel === ch) return;
+  salesChannel = ch;
+  ['store','line','ecom'].forEach(c => {
+    document.getElementById('channel'+c.charAt(0).toUpperCase()+c.slice(1)+'Btn').classList.toggle('active', c===ch);
+  });
+  // clear cart completely — items priced for old channel must not carry over
+  if (cart.length) {
+    cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
+    const discEl = document.getElementById('discountInput'); if(discEl) discEl.value='';
+    const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value='';
+    showToast('🗑️ ล้างตะกร้าแล้ว (เปลี่ยนช่องทาง)');
+  }
+  applyChannelUI();
+  renderProducts(); renderCart(); updateSummary();
+  showToast(CHANNELS[ch].icon + ' เปลี่ยนเป็น ' + CHANNELS[ch].label);
+}
+
+const METHOD_META = {
+  cash:{icon:'💵',label:'เงินสด',cls:'cash'}, qr:{icon:'📱',label:'QR',cls:'qr'},
+  line:{icon:'💬',label:'Line OA',cls:'line'}, shopee:{icon:'🛍️',label:'Shopee',cls:'shopee'},
+  tiktok:{icon:'🎵',label:'TikTok',cls:'tiktok'}, gov:{icon:'🏛️',label:'โครงการรัฐ',cls:'gov'}
+};
+// Toggle which checkout controls show, and rebuild the payment-method grid, based on the active channel
+function applyChannelUI() {
+  const ch = CHANNELS[salesChannel];
+  document.getElementById('promoSection').style.display = ch.hasPromo ? '' : 'none';
+  document.getElementById('shippingRow').style.display = ch.hasShipping ? '' : 'none';
+  document.getElementById('discountRow').style.display = ch.hasDiscount ? '' : 'none';
+  if (!ch.hasShipping) document.getElementById('shippingInput').value = '';
+  if (!ch.hasDiscount) document.getElementById('discountInput').value = '';
+  document.getElementById('payGrid').innerHTML = ch.methods.map(m =>
+    `<button class="pay-btn ${METHOD_META[m].cls}" onclick="openPayment('${m}')"><span class="pi">${METHOD_META[m].icon}</span>${METHOD_META[m].label}</button>`
+  ).join('');
+}
+
 // ============ PRODUCTS ============
 function renderProducts() {
   document.getElementById('productsGrid').innerHTML = products.map(p => `
@@ -1020,14 +1095,14 @@ function renderProducts() {
       <span class="emoji">${p.emoji}</span>
       <div class="name">${p.name}</div>
       <div class="sku">${p.sku}</div>
-      <div class="price">฿${p.price}</div>
+      <div class="price">฿${priceFor(p)}</div>
     </div>`).join('');
 }
 
 function addToCart(id) {
   const p = products.find(x => x.id === id); if (!p) return;
-  const price = parseFloat(p.price) || 0;
-  console.log('addToCart:', p.name, 'price:', price, 'raw:', p.price);
+  const price = priceFor(p);
+  console.log('addToCart:', p.name, 'price:', price, 'channel:', salesChannel);
   const ex = cart.find(c => c.id === id);
   if (ex) ex.qty++;
   else cart.push({id:p.id, name:p.name, sku:p.sku, price:price, emoji:p.emoji, is_promo:!!p.is_promo, qty:1});
@@ -1084,42 +1159,46 @@ function calcPromoDiscount() {
   return promoSets * (PROMO_SET_SIZE * PROMO_UNIT_PRICE - PROMO_SET_PRICE);
 }
 function updateSummary() {
+  const ch = CHANNELS[salesChannel];
   const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
   console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
   const totalQty = cart.reduce((s,c) => s + c.qty, 0);
-  const maxSets = getMaxPromoSets();
+  const maxSets = ch.hasPromo ? getMaxPromoSets() : 0;
 
-  // Update promo button state
+  // Update promo button state (only relevant for channels with promo enabled)
   const promoBtn = document.getElementById('promoBigBtn');
   const resetBtn = document.getElementById('promoResetBtn');
   const promoHint = document.getElementById('promoHint');
+  if (!ch.hasPromo) { promoActive = false; promoSets = 0; }
   // Clamp promoSets if cart changed
   if (promoSets > maxSets) { promoSets = maxSets; if (maxSets===0){ promoActive=false; promoSets=0; } }
 
-  if (totalQty >= PROMO_SET_SIZE) {
-    if (promoBtn) promoBtn.disabled = false;
-    if (promoSets === 0) {
-      if (promoBtn) { promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (promoHint) promoHint.textContent = `มี ${totalQty} ชิ้น → แตะเพื่อเพิ่มทีละเซ็ต (สูงสุด ${maxSets} เซ็ต)`;
+  if (ch.hasPromo) {
+    if (totalQty >= PROMO_SET_SIZE) {
+      if (promoBtn) promoBtn.disabled = false;
+      if (promoSets === 0) {
+        if (promoBtn) { promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
+        if (resetBtn) resetBtn.style.display = 'none';
+        if (promoHint) promoHint.textContent = `มี ${totalQty} ชิ้น → แตะเพื่อเพิ่มทีละเซ็ต (สูงสุด ${maxSets} เซ็ต)`;
+      } else {
+        if (promoBtn) { promoBtn.classList.add('active'); promoBtn.textContent = `🎁 โปร ${promoSets} เซ็ต (กดเพิ่ม / ครบ ${maxSets} reset)`; }
+        if (resetBtn) resetBtn.style.display = 'block';
+        if (promoHint) promoHint.textContent = `ใช้โปร ${promoSets} เซ็ต = ${promoSets*3} ถุง ฿${promoSets*100}`;
+      }
     } else {
-      if (promoBtn) { promoBtn.classList.add('active'); promoBtn.textContent = `🎁 โปร ${promoSets} เซ็ต (กดเพิ่ม / ครบ ${maxSets} reset)`; }
-      if (resetBtn) resetBtn.style.display = 'block';
-      if (promoHint) promoHint.textContent = `ใช้โปร ${promoSets} เซ็ต = ${promoSets*3} ถุง ฿${promoSets*100}`;
+      if (promoBtn) { promoBtn.disabled = true; promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
+      if (resetBtn) resetBtn.style.display = 'none';
+      if (promoHint) promoHint.textContent = `เพิ่มสินค้าอย่างน้อย ${PROMO_SET_SIZE} ชิ้นเพื่อใช้โปร`;
+      if (promoActive) { promoActive = false; promoSets = 0; }
     }
-  } else {
-    if (promoBtn) { promoBtn.disabled = true; promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
-    if (resetBtn) resetBtn.style.display = 'none';
-    if (promoHint) promoHint.textContent = `เพิ่มสินค้าอย่างน้อย ${PROMO_SET_SIZE} ชิ้นเพื่อใช้โปร`;
-    if (promoActive) { promoActive = false; promoSets = 0; }
   }
 
-  const disc = calcPromoDiscount();
   // For promo: items in sets pay promo price, rest pay normal
   // total = (promoSets * 100) + (remaining items * 39)
-  const shipping = parseFloat((document.getElementById('shippingInput')||{}).value) || 0;
+  const shipping = ch.hasShipping ? (parseFloat((document.getElementById('shippingInput')||{}).value) || 0) : 0;
+  const manualDiscount = ch.hasDiscount ? (parseFloat((document.getElementById('discountInput')||{}).value) || 0) : 0;
   let baseTotal;
-  if (promoActive && promoSets > 0) {
+  if (ch.hasPromo && promoActive && promoSets > 0) {
     // promoSets sets pay 100 each, remaining items pay normal price
     const totalQtyInCart = cart.reduce((s,c)=>s+(parseInt(c.qty)||0),0);
     const promoItemsCount = promoSets * PROMO_SET_SIZE;
@@ -1130,10 +1209,11 @@ function updateSummary() {
   } else {
     baseTotal = sub;
   }
+  baseTotal = Math.max(0, baseTotal - manualDiscount);
   const total = Math.round(baseTotal + shipping);
   currentTotal = total;
-  console.log('updateSummary: sub='+sub+' promoSets='+promoSets+' baseTotal='+baseTotal+' shipping='+shipping+' total='+total);
-  const actualDisc = sub - baseTotal;
+  console.log('updateSummary: sub='+sub+' promoSets='+promoSets+' manualDiscount='+manualDiscount+' baseTotal='+baseTotal+' shipping='+shipping+' total='+total);
+  const actualDisc = sub - manualDiscount - baseTotal; // promo-only discount portion (excludes manual discount)
 
   document.getElementById('subtotalDisplay').textContent = '฿' + sub;
   const promoRow = document.getElementById('promoRow');
@@ -1141,15 +1221,13 @@ function updateSummary() {
   const promoDiscEl = document.getElementById('promoDiscDisplay');
   const totalEl = document.getElementById('totalDisplay');
   const subtotalEl = document.getElementById('subtotalDisplay');
-  if (promoActive && promoSets > 0 && actualDisc > 0) {
+  if (ch.hasPromo && promoActive && promoSets > 0 && actualDisc > 0) {
     if (promoRow) promoRow.style.display = 'flex';
     if (promoSetsLabelEl) promoSetsLabelEl.textContent = promoSets;
     if (promoDiscEl) promoDiscEl.textContent = '-฿' + actualDisc.toLocaleString();
   } else {
     if (promoRow) promoRow.style.display = 'none';
   }
-  const shippingEl = document.getElementById('shippingDisplay');
-  if (shippingEl) shippingEl.textContent = shipping > 0 ? '+฿' + shipping.toLocaleString() : '';
   if (totalEl) totalEl.textContent = '฿' + total.toLocaleString();
   if (subtotalEl) subtotalEl.textContent = '฿' + sub.toLocaleString();
 }
@@ -1218,10 +1296,12 @@ function updateCashDisplay() {
 }
 
 async function confirmPayment() {
+  const ch = CHANNELS[salesChannel];
   const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
   console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
-  const shipping = parseFloat((document.getElementById('shippingInput')||{}).value) || 0;
-  const promoDisc = sub - (currentTotal - shipping);
+  const shipping = ch.hasShipping ? (parseFloat((document.getElementById('shippingInput')||{}).value) || 0) : 0;
+  const manualDiscount = ch.hasDiscount ? (parseFloat((document.getElementById('discountInput')||{}).value) || 0) : 0;
+  const promoDisc = sub - manualDiscount - (currentTotal - shipping);
   const order = {
     id: 'ORD-' + Date.now(),
     ref: '#' + String(orders.length + 1).padStart(4,'0'),
@@ -1229,6 +1309,8 @@ async function confirmPayment() {
     items: cart.map(c => ({...c})),
     subtotal: sub,
     promo_discount: Math.max(0, promoDisc),
+    manual_discount: manualDiscount,
+    channel: salesChannel,
     total: currentTotal,
     method: pendingMethod,
     cash_received: pendingMethod === 'cash' ? cashReceived : null,
@@ -1269,6 +1351,7 @@ function showSuccess(o) {
 function newOrder() {
   cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
   const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = '';
+  const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = '';
   document.getElementById('promoBigBtn').classList.remove('active');
   document.getElementById('promoBigBtn').textContent = '🎁 โปร 3 ถุง ฿100';
   document.getElementById('promoResetBtn').style.display = 'none';
@@ -1286,6 +1369,12 @@ function updateSummaryBar() {
     const idMap = {qr:'todayQR', cash:'todayCash', line:'todayLine', shopee:'todayShopee', tiktok:'todayTiktok', gov:'todayGov'};
     const el = document.getElementById(idMap[m]);
     if (el) el.textContent = tod.filter(o => o.method === m).length;
+  });
+  // channel totals in header bar
+  const chEl = {store:'todayChStore', line:'todayChLine', ecom:'todayChEcom'};
+  ['store','line','ecom'].forEach(ch => {
+    const el = document.getElementById(chEl[ch]);
+    if (el) el.textContent = '฿' + tod.filter(o=>orderChannel(o)===ch).reduce((s,o)=>s+o.total,0).toLocaleString();
   });
 }
 
@@ -1473,9 +1562,20 @@ function setF7() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-6); d
 function setF30() { const t=new Date(),f=new Date(t); f.setDate(f.getDate()-29); document.getElementById('filterFrom').value=toYMD(f); document.getElementById('filterTo').value=toYMD(t); renderDashboard(); }
 function setFAll() { document.getElementById('filterFrom').value=''; document.getElementById('filterTo').value=''; renderDashboard(); }
 
+let dashChannelFilter = 'all'; // 'all' | 'store' | 'line' | 'ecom'
+function setChannelFilter(ch) {
+  dashChannelFilter = ch;
+  ['All','Store','Line','Ecom'].forEach(c => {
+    document.getElementById('chf'+c+'Btn').classList.toggle('active', c.toLowerCase()===ch);
+  });
+  renderDashboard();
+}
 function getFilteredOrders() {
   const from = document.getElementById('filterFrom').value, to = document.getElementById('filterTo').value;
-  return orders.filter(o => { const d=toYMD(new Date(o.timestamp)); return (!from||d>=from)&&(!to||d<=to)&&!o.voided; });
+  return orders.filter(o => {
+    const d=toYMD(new Date(o.timestamp));
+    return (!from||d>=from)&&(!to||d<=to)&&!o.voided&&(dashChannelFilter==='all'||orderChannel(o)===dashChannelFilter);
+  });
 }
 
 let viewMode = 'money'; // single toggle controls all dashboard visuals
@@ -1485,7 +1585,7 @@ function renderDashboard() {
   const from = document.getElementById('filterFrom').value, to = document.getElementById('filterTo').value;
   const total = f.reduce((s,o)=>s+o.total,0), bills = f.length, avg = bills?Math.round(total/bills):0;
   const totalQty = f.reduce((s,o)=>s+o.items.reduce((s2,i)=>s2+i.qty,0),0);
-  const voidCount = orders.filter(o=>{const d=toYMD(new Date(o.timestamp));return(!from||d>=from)&&(!to||d<=to)&&o.voided;}).length;
+  const voidCount = orders.filter(o=>{const d=toYMD(new Date(o.timestamp));return(!from||d>=from)&&(!to||d<=to)&&o.voided&&(dashChannelFilter==='all'||orderChannel(o)===dashChannelFilter);}).length;
 
   // by flavor
   const flavorMap = {};
@@ -1621,6 +1721,15 @@ function renderDashboard() {
           })))
         : '<div style="color:var(--gray);font-size:12px">ยังไม่มีข้อมูล</div>'}
 
+      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.8px">📦 ช่องทางขาย</div>
+      ${renderStackedBar(Object.values(CHANNELS).map(c => {
+          const chOrders = f.filter(o => orderChannel(o)===c.key);
+          const v = chOrders.reduce((s,o)=>s+o.total,0);
+          const cnt = chOrders.length;
+          const chColors = {store:'#7A4210', line:'#06C755', ecom:'#EE4D2D'};
+          return {label:c.icon+' '+c.label, value: viewMode==='money'?v:cnt, color: chColors[c.key], extra: viewMode==='money'?cnt+' บิล':'฿'+v.toLocaleString()};
+        }))}
+
       <div style="font-size:11px;font-weight:700;color:var(--gray);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.8px">💳 ช่องทางชำระเงิน</div>
       ${renderStackedBar(methodData.map(m => {
           const v = f.filter(o=>o.method===m.key).reduce((s,o)=>s+o.total,0);
@@ -1751,6 +1860,11 @@ function initEOD() {
   tod.forEach(o=>totals[o.method]=(totals[o.method]||0)+o.total);
   const grand = Object.values(totals).reduce((a,b)=>a+b,0);
   document.getElementById('eodSales').value = '฿' + grand.toLocaleString();
+  const chTotals = {store:0, line:0, ecom:0};
+  tod.forEach(o => { chTotals[orderChannel(o)] = (chTotals[orderChannel(o)]||0) + o.total; });
+  document.getElementById('eodChStore').value = '฿' + chTotals.store.toLocaleString();
+  document.getElementById('eodChLine').value = '฿' + chTotals.line.toLocaleString();
+  document.getElementById('eodChEcom').value = '฿' + chTotals.ecom.toLocaleString();
   document.getElementById('eodCashPOS').value = '฿' + totals.cash.toLocaleString();
   document.getElementById('eodQRPOS').value = '฿' + totals.qr.toLocaleString();
   document.getElementById('eodLinePOS').value = '฿' + totals.line.toLocaleString();
@@ -1842,6 +1956,8 @@ async function saveEOD() {
   const tod = orders.filter(o=>new Date(o.timestamp).toDateString()===new Date().toDateString()&&!o.voided);
   const totals = {cash:0,qr:0,line:0,shopee:0,tiktok:0,gov:0};
   tod.forEach(o=>totals[o.method]=(totals[o.method]||0)+o.total);
+  const chTotals = {store:0, line:0, ecom:0};
+  tod.forEach(o => { chTotals[orderChannel(o)] = (chTotals[orderChannel(o)]||0) + o.total; });
 
   const opening = getOpeningBalanceToday();
   const cashReal = getCashRealTotal();
@@ -1857,6 +1973,7 @@ async function saveEOD() {
     opening_balance: opening,
     sales_total: Object.values(totals).reduce((a,b)=>a+b,0),
     by_method: totals,
+    by_channel: chTotals,
     cash_real: cashReal,
     denom_counts: denomCounts,
     deposit, expense,
@@ -1915,6 +2032,12 @@ function renderEODHistory() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:11px;color:var(--gray)">
         <span>ตั้งต้น: ฿${(r.opening_balance||0).toLocaleString()}</span>
         <span>ยอดรวม: <strong style="color:var(--brown-mid)">฿${r.sales_total.toLocaleString()}</strong></span>
+        ${r.by_channel ? `
+        <span>🏪 หน้าร้าน: ฿${(r.by_channel.store||0).toLocaleString()}</span>
+        <span>💬 Line OA: ฿${(r.by_channel.line||0).toLocaleString()}</span>
+        <span>🛍️ E-com: ฿${(r.by_channel.ecom||0).toLocaleString()}</span>
+        <span></span>
+        ` : ''}
         <span>สด: ฿${(r.by_method.cash||0).toLocaleString()}</span>
         <span>นับได้: ฿${(r.cash_real||0).toLocaleString()}</span>
         <span>QR: ฿${(r.by_method.qr||0).toLocaleString()}</span>
