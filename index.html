@@ -986,9 +986,13 @@ async function loadPromos() {
     sort_order: parseInt(p.sort_order) || 0
   }));
 }
-async function savePromoDB(p) {
+async function savePromoDB(p, isNew) {
   const body = {...p, channels: JSON.stringify(p.channels)};
-  await sb('promos?id=eq.'+p.id, {method:'UPSERT', body, prefer:'return=minimal', headers:{'Prefer':'resolution=merge-duplicates'}});
+  if (isNew) {
+    await sb('promos', {method:'POST', body, prefer:'return=minimal'});
+  } else {
+    await sb('promos?id=eq.'+p.id, {method:'PATCH', body, prefer:'return=minimal'});
+  }
 }
 async function deletePromoDB(id) {
   await sb('promos?id=eq.'+id, {method:'DELETE', prefer:'return=minimal'});
@@ -2646,6 +2650,7 @@ async function savePromo() {
   if (document.getElementById('promoChLine').checked) channels.push('line');
   if (document.getElementById('promoChEcom').checked) channels.push('ecom');
   if (!channels.length) { showToast('เลือกช่องทางอย่างน้อย 1 อัน'); return; }
+  const isNew = !id;
   const p = {
     id: id || 'promo_'+Date.now(),
     name, type, channels,
@@ -2658,7 +2663,7 @@ async function savePromo() {
   };
   setSyncDot('loading');
   try {
-    await savePromoDB(p);
+    await savePromoDB(p, isNew);
     if (id) { const idx=promos.findIndex(x=>x.id===id); if(idx>=0) promos[idx]=p; }
     else promos.push(p);
     setSyncDot('ok');
@@ -2670,7 +2675,7 @@ async function savePromo() {
 async function togglePromo(id) {
   const p = promos.find(x=>x.id===id); if (!p) return;
   p.active = !p.active;
-  await savePromoDB(p); renderManage(); updateSummary();
+  await savePromoDB(p, false); renderManage(); updateSummary();
 }
 async function deletePromo(id) {
   if (!confirm('ลบโปรนี้?')) return;
