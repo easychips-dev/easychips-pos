@@ -258,7 +258,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .dash-tab{padding:5px 10px;border:none;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray)}
 .dash-tab.active{background:var(--banana);color:var(--brown)}
 
-.channel-toggle{display:flex;gap:6px;margin-bottom:10px}
+.channel-toggle{display:flex;gap:6px;margin-bottom:6px}
+.slot-toggle{display:flex;gap:6px;margin-bottom:10px}
+.slot-btn{flex:1;padding:7px 6px;border:1.5px solid #EDE7D9;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray);display:flex;align-items:center;justify-content:center;gap:6px}
+.slot-btn.active{background:var(--banana);border-color:var(--brown-mid);color:var(--brown)}
+.slot-badge{background:var(--brown-mid);color:white;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.slot-btn.active .slot-badge{background:var(--brown)}
+.slot-badge.empty{background:var(--gray-light);color:var(--gray)}
 .channel-btn{flex:1;padding:9px 6px;border:1.5px solid #EDE7D9;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--gray)}
 #channelStoreBtn.active{background:var(--brown-mid);border-color:var(--brown-mid);color:white}
 #channelLineBtn.active{background:var(--line);border-color:var(--line);color:white}
@@ -412,6 +418,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <button class="channel-btn active" id="channelStoreBtn" onclick="setChannel('store')">🏪 หน้าร้าน</button>
       <button class="channel-btn" id="channelLineBtn" onclick="setChannel('line')">💬 Line OA</button>
       <button class="channel-btn" id="channelEcomBtn" onclick="setChannel('ecom')">🛍️ E-com</button>
+    </div>
+    <div class="slot-toggle" id="storeSlotRow">
+      <button class="slot-btn active" id="slotStore_aBtn" onclick="switchSlot('store_a')">ลูกค้า 1 <span class="slot-badge" id="slotBadge_store_a">0</span></button>
+      <button class="slot-btn" id="slotStore_bBtn" onclick="switchSlot('store_b')">ลูกค้า 2 <span class="slot-badge" id="slotBadge_store_b">0</span></button>
     </div>
     <div class="products-grid" id="productsGrid"></div>
   </div>
@@ -830,8 +840,72 @@ const PROMO_UNIT_PRICE = 39;
 const PROMO_SET_SIZE = 3;
 
 let products = [], orders = [], eodRecords = [];
-let cart = [], currentTotal = 0, pendingMethod = '';
-let salesChannel = 'store'; // 'store' | 'line' | 'ecom'
+// ============ CART SLOTS ============
+// Each slot holds a fully independent cart + promo/shipping/discount state.
+// Switching slots saves the current state and restores the target slot.
+const SLOT_DEFS = {
+  store_a: { channel:'store', label:'ลูกค้า 1' },
+  store_b: { channel:'store', label:'ลูกค้า 2' },
+  line:    { channel:'line',  label:'Line OA' },
+  ecom:    { channel:'ecom',  label:'E-com' },
+};
+function emptySlotState() {
+  return { cart:[], promoActive:false, promoSets:0, shipping:'', discount:'' };
+}
+let cartSlots = {
+  store_a: emptySlotState(),
+  store_b: emptySlotState(),
+  line:    emptySlotState(),
+  ecom:    emptySlotState(),
+};
+let activeSlot = 'store_a';
+
+// Flat globals that mirror the active slot — kept in sync by saveSlot/loadSlot
+let cart = [], promoActive = false, promoSets = 0;
+let currentTotal = 0, pendingMethod = '';
+
+function saveSlot() {
+  const s = cartSlots[activeSlot];
+  s.cart = cart.map(c=>({...c}));
+  s.promoActive = promoActive;
+  s.promoSets = promoSets;
+  s.shipping = (document.getElementById('shippingInput')||{}).value || '';
+  s.discount  = (document.getElementById('discountInput')||{}).value  || '';
+}
+function loadSlot(slotKey) {
+  const s = cartSlots[slotKey];
+  cart = s.cart.map(c=>({...c}));
+  promoActive = s.promoActive;
+  promoSets   = s.promoSets;
+  const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = s.shipping;
+  const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = s.discount;
+}
+function updateSlotBadges() {
+  Object.keys(cartSlots).forEach(k => {
+    const el = document.getElementById('slotBadge_'+k);
+    if (!el) return;
+    const n = cartSlots[k].cart.reduce((s,c)=>s+(c.qty||0),0);
+    el.textContent = n || '0';
+    el.className = 'slot-badge' + (n ? '' : ' empty');
+  });
+}
+function switchSlot(slotKey) {
+  if (activeSlot === slotKey) return;
+  saveSlot();
+  activeSlot = slotKey;
+  salesChannel = SLOT_DEFS[slotKey].channel;
+  loadSlot(slotKey);
+  // update slot button highlights (only store sub-slots have buttons)
+  ['store_a','store_b'].forEach(k => {
+    const btn = document.getElementById('slot'+k.replace('_','_')+'Btn') || document.getElementById('slot'+k+'Btn');
+    if(btn) btn.classList.toggle('active', k===slotKey);
+  });
+  updateSlotBadges();
+  applyChannelUI();
+  renderProducts(); renderCart(); updateSummary();
+  showToast('📋 ' + SLOT_DEFS[slotKey].label);
+}
+let salesChannel = 'store'; // kept in sync with SLOT_DEFS[activeSlot].channel
 const CHANNELS = {
   store: { key:'store', label:'หน้าร้าน',  icon:'🏪', price:39, hasShipping:false, hasPromo:true,  hasDiscount:false, methods:['cash','qr','gov'] },
   line:  { key:'line',  label:'Line OA',  icon:'💬', price:39, hasShipping:true,  hasPromo:true,  hasDiscount:false, methods:['line'] },
@@ -848,7 +922,7 @@ function channelFromMethod(method) {
   return 'store'; // cash, qr, gov
 }
 function orderChannel(o) { return o.channel || channelFromMethod(o.method); }
-let promoActive = false, promoSets = 0;
+// promoActive and promoSets are declared in the cart slots section above
 let cashReceived = 0;
 let cashKeyBuffer = '';
 let adminPin = '1234';
@@ -963,6 +1037,7 @@ async function init() {
       renderProducts();
       renderCart();
       applyChannelUI();
+      updateSlotBadges();
       updateSummary();
       updateSummaryBar();
       setInterval(async () => {
@@ -991,6 +1066,8 @@ const ADMIN_TABS = ['eod','rawdata','manage'];
 const ADMIN_TAB_NAMES = {eod:'ปิดยอด',rawdata:'ข้อมูล Raw',manage:'จัดการ'};
 
 function switchTab(tab) {
+  // Save current cart slot state before leaving POS
+  saveSlot();
   // Reset admin unlock when navigating away from admin tabs
   if (ADMIN_TABS.includes(lastAdminTab) && !ADMIN_TABS.includes(tab)) {
     adminUnlocked = false;
@@ -1052,21 +1129,23 @@ function checkPinGate() {
 }
 
 function setChannel(ch) {
-  if (salesChannel === ch) return;
-  salesChannel = ch;
+  const slotKey = ch === 'store' ? 'store_a' : ch;
+  // Highlight top-level channel buttons
   ['store','line','ecom'].forEach(c => {
     document.getElementById('channel'+c.charAt(0).toUpperCase()+c.slice(1)+'Btn').classList.toggle('active', c===ch);
   });
-  // clear cart completely — items priced for old channel must not carry over
-  if (cart.length) {
-    cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
-    const discEl = document.getElementById('discountInput'); if(discEl) discEl.value='';
-    const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value='';
-    showToast('🗑️ ล้างตะกร้าแล้ว (เปลี่ยนช่องทาง)');
-  }
+  // Show/hide store sub-slot row
+  document.getElementById('storeSlotRow').style.display = ch === 'store' ? '' : 'none';
+  // Already on this channel (and correct sub-slot) — nothing to do
+  if (SLOT_DEFS[activeSlot].channel === ch && activeSlot === slotKey) return;
+  saveSlot();
+  activeSlot = slotKey;
+  salesChannel = ch;
+  loadSlot(activeSlot);
+  updateSlotBadges();
   applyChannelUI();
   renderProducts(); renderCart(); updateSummary();
-  showToast(CHANNELS[ch].icon + ' เปลี่ยนเป็น ' + CHANNELS[ch].label);
+  showToast(CHANNELS[ch].icon + ' ' + CHANNELS[ch].label);
 }
 
 const METHOD_META = {
@@ -1082,6 +1161,16 @@ function applyChannelUI() {
   document.getElementById('discountRow').style.display = ch.hasDiscount ? '' : 'none';
   if (!ch.hasShipping) document.getElementById('shippingInput').value = '';
   if (!ch.hasDiscount) document.getElementById('discountInput').value = '';
+  // store sub-slot row visible only on store channel
+  const slotRow = document.getElementById('storeSlotRow');
+  if (slotRow) slotRow.style.display = salesChannel === 'store' ? '' : 'none';
+  // highlight correct slot btn
+  if (salesChannel === 'store') {
+    ['store_a','store_b'].forEach(k => {
+      const btn = document.getElementById('slot'+k+'Btn');
+      if(btn) btn.classList.toggle('active', k===activeSlot);
+    });
+  }
   document.getElementById('payGrid').innerHTML = ch.methods.map(m =>
     `<button class="pay-btn ${METHOD_META[m].cls}" onclick="openPayment('${m}')"><span class="pi">${METHOD_META[m].icon}</span>${METHOD_META[m].label}</button>`
   ).join('');
@@ -1106,13 +1195,13 @@ function addToCart(id) {
   const ex = cart.find(c => c.id === id);
   if (ex) ex.qty++;
   else cart.push({id:p.id, name:p.name, sku:p.sku, price:price, emoji:p.emoji, is_promo:!!p.is_promo, qty:1});
-  renderCart(); updateSummary(); showToast('+ ' + p.emoji + ' ' + p.name);
+  renderCart(); updateSummary(); updateSlotBadges(); showToast('+ ' + p.emoji + ' ' + p.name);
 }
 function changeQty(id, d) {
   const item = cart.find(c => c.id === id); if (!item) return;
   item.qty += d;
   if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
-  renderCart(); updateSummary();
+  renderCart(); updateSummary(); updateSlotBadges();
 }
 function renderCart() {
   const count = cart.reduce((s,c) => s + c.qty, 0);
@@ -1352,6 +1441,9 @@ function newOrder() {
   cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
   const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = '';
   const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = '';
+  // persist the cleared state back into the slot
+  saveSlot();
+  updateSlotBadges();
   document.getElementById('promoBigBtn').classList.remove('active');
   document.getElementById('promoBigBtn').textContent = '🎁 โปร 3 ถุง ฿100';
   document.getElementById('promoResetBtn').style.display = 'none';
