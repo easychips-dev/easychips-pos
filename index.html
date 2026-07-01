@@ -261,7 +261,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .channel-toggle{display:flex;gap:6px;margin-bottom:6px}
 .slot-toggle{display:flex;gap:6px;margin-bottom:10px}
 .slot-btn{flex:1;padding:7px 6px;border:1.5px solid #EDE7D9;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--gray-light);color:var(--gray);display:flex;align-items:center;justify-content:center;gap:6px}
-.slot-btn.active{background:var(--banana);border-color:var(--brown-mid);color:var(--brown)}
+.slot-btn.active{background:var(--banana);border-color:var(--banana);color:var(--brown)}
 .slot-badge{background:var(--brown-mid);color:white;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
 .slot-btn.active .slot-badge{background:var(--brown)}
 .slot-badge.empty{background:var(--gray-light);color:var(--gray)}
@@ -420,8 +420,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <button class="channel-btn" id="channelEcomBtn" onclick="setChannel('ecom')">🛍️ E-com</button>
     </div>
     <div class="slot-toggle" id="storeSlotRow">
-      <button class="slot-btn active" id="slotStore_aBtn" onclick="switchSlot('store_a')">ลูกค้า 1 <span class="slot-badge" id="slotBadge_store_a">0</span></button>
-      <button class="slot-btn" id="slotStore_bBtn" onclick="switchSlot('store_b')">ลูกค้า 2 <span class="slot-badge" id="slotBadge_store_b">0</span></button>
+      <button class="slot-btn active" id="slotstore_aBtn" onclick="switchSlot('store_a')">ลูกค้า 1 <span class="slot-badge" id="slotBadge_store_a">0</span></button>
+      <button class="slot-btn" id="slotstore_bBtn" onclick="switchSlot('store_b')">ลูกค้า 2 <span class="slot-badge" id="slotBadge_store_b">0</span></button>
     </div>
     <div class="products-grid" id="productsGrid"></div>
   </div>
@@ -435,12 +435,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
     </div>
     <div class="cart-footer">
       <div class="promo-section" id="promoSection">
-        <div class="promo-label">โปร 3 ถุง ฿100</div>
-        <div class="promo-controls">
-          <button class="promo-btn" id="promoBigBtn" onclick="tapPromo()" disabled>🎁 โปร 3 ถุง ฿100</button>
-          <button class="promo-reset-btn" id="promoResetBtn" onclick="resetPromo()" style="display:none">✕</button>
-        </div>
-        <div class="promo-hint" id="promoHint">เพิ่มสินค้าอย่างน้อย 3 ชิ้นเพื่อใช้โปร</div>
+        <div id="promoBtnsContainer"></div>
       </div>
       <div class="divider"></div>
       <div class="sum-row"><span class="sum-label">ยอดสินค้า</span><span class="sum-val" id="subtotalDisplay">฿0</span></div>
@@ -667,6 +662,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <div id="managePanel"></div>
       <button style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--banana);color:var(--brown);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px" onclick="openAddProduct()">＋ เพิ่มสินค้าใหม่</button>
     </div>
+
+    <div class="settings-card">
+      <div class="settings-title">🎁 จัดการโปรโมชั่น</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">สร้างปุ่มโปรเองได้ เลือกได้ว่าใช้งานได้ช่องทางไหน</div>
+      <div id="promosPanel"></div>
+      <button style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--banana);color:var(--brown);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px" onclick="openAddPromo()">＋ เพิ่มโปรใหม่</button>
+    </div>
     <div class="settings-card" style="border:2px solid var(--red-light)">
       <div class="settings-title" style="color:var(--red)">⚠️ ล้างข้อมูลทั้งหมด</div>
       <div style="font-size:12px;color:var(--gray);margin-bottom:10px">ลบประวัติการขายและปิดยอดทั้งหมดใน Supabase ถาวร ใส่ Admin PIN เพื่อยืนยัน</div>
@@ -799,8 +801,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
       <input type="hidden" id="editProductId">
       <div class="form-group"><label class="form-label">ชื่อสินค้า</label><input type="text" class="form-input" id="newPName" placeholder="กล้วยฉาบรสหวาน"></div>
       <div class="form-group"><label class="form-label">SKU</label><input type="text" class="form-input" id="newPSKU" placeholder="KB-001"></div>
-      <div class="form-group"><label class="form-label">ราคา (บาท)</label><input type="number" class="form-input" id="newPPrice" placeholder="39"></div>
       <div class="form-group"><label class="form-label">Emoji</label><input type="text" class="form-input" id="newPEmoji" placeholder="🍌"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.8px">💰 ราคาแต่ละช่องทาง</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="form-group" style="margin:0"><label class="form-label">🏪 หน้าร้าน</label><input type="number" class="form-input" id="newPPrice" placeholder="39"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">💬 Line OA</label><input type="number" class="form-input" id="newPPriceLine" placeholder="เท่ากัน"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">🛍️ E-com</label><input type="number" class="form-input" id="newPPriceEcom" placeholder="49"></div>
+      </div>
       <div class="promo-cb-row"><input type="checkbox" id="newPIsPromo"><label for="newPIsPromo">🏷️ สินค้าโปรโมชั่น</label></div>
       <button class="btn-save-prod" onclick="saveProduct()">💾 บันทึกสินค้า</button>
     </div>
@@ -808,6 +815,43 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL: Add/Edit Promo -->
+<div class="modal-overlay" id="addPromoModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">เพิ่ม/แก้ไขโปร</div><button class="modal-close" onclick="closeModal('addPromoModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="editPromoId">
+      <div class="form-group"><label class="form-label">ชื่อโปร (ชื่อปุ่ม)</label><input type="text" class="form-input" id="newPromoName" placeholder="เช่น 3 ถุง ฿100"></div>
+      <div class="form-group">
+        <label class="form-label">ประเภทโปร</label>
+        <select class="form-input" id="newPromoType" onchange="onPromoTypeChange()">
+          <option value="set">🧮 เซ็ต — N ถุง ราคาเหมา</option>
+          <option value="fixed">฿ ส่วนลดคงที่ (บาท)</option>
+          <option value="percent">% ส่วนลดเปอร์เซ็นต์</option>
+        </select>
+      </div>
+      <div id="promoParamSet" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="form-group" style="margin:0"><label class="form-label">จำนวน (ถุง/เซ็ต)</label><input type="number" class="form-input" id="newPromoSetSize" placeholder="3" min="1"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">ราคาเซ็ต (฿)</label><input type="number" class="form-input" id="newPromoSetPrice" placeholder="100" min="0"></div>
+      </div>
+      <div id="promoParamFixed" style="display:none;margin-bottom:8px">
+        <div class="form-group"><label class="form-label">ส่วนลด (฿)</label><input type="number" class="form-input" id="newPromoFixed" placeholder="0" min="0"></div>
+      </div>
+      <div id="promoParamPct" style="display:none;margin-bottom:8px">
+        <div class="form-group"><label class="form-label">ส่วนลด (%)</label><input type="number" class="form-input" id="newPromoPct" placeholder="10" min="0" max="100"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--gray);margin:8px 0 6px;text-transform:uppercase;letter-spacing:.8px">ใช้ได้ที่ช่องทาง</div>
+      <div style="display:flex;gap:14px;margin-bottom:12px;font-size:13px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="promoChStore" checked> 🏪 หน้าร้าน</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="promoChLine" checked> 💬 Line OA</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="promoChEcom"> 🛍️ E-com</label>
+      </div>
+      <div class="promo-cb-row"><input type="checkbox" id="newPromoActive" checked><label for="newPromoActive">✅ เปิดใช้งาน</label></div>
+      <button class="btn-save-prod" onclick="savePromo()">💾 บันทึกโปร</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ============ SUPABASE CONFIG ============
@@ -835,9 +879,7 @@ async function sb(path, opts={}) {
 // ============ STATE ============
 const METHOD_LABELS = {cash:'💵 เงินสด',qr:'📱 QR',line:'💬 Line OA',shopee:'🛍️ Shopee',tiktok:'🎵 TikTok',gov:'🏛️ โครงการรัฐ'};
 const METHOD_ICONS  = {cash:'💵',qr:'📷',line:'💬',shopee:'🛍️',gov:'🏛️'};
-const PROMO_SET_PRICE = 100;
-const PROMO_UNIT_PRICE = 39;
-const PROMO_SET_SIZE = 3;
+// Promo constants removed — promos are now fully configurable via Admin > จัดการโปร
 
 let products = [], orders = [], eodRecords = [];
 // ============ CART SLOTS ============
@@ -850,7 +892,7 @@ const SLOT_DEFS = {
   ecom:    { channel:'ecom',  label:'E-com' },
 };
 function emptySlotState() {
-  return { cart:[], promoActive:false, promoSets:0, shipping:'', discount:'' };
+  return { cart:[], promoActive:false, promoSets:0, activePromoId:null, shipping:'', discount:'' };
 }
 let cartSlots = {
   store_a: emptySlotState(),
@@ -869,6 +911,7 @@ function saveSlot() {
   s.cart = cart.map(c=>({...c}));
   s.promoActive = promoActive;
   s.promoSets = promoSets;
+  s.activePromoId = activePromoId;
   s.shipping = (document.getElementById('shippingInput')||{}).value || '';
   s.discount  = (document.getElementById('discountInput')||{}).value  || '';
 }
@@ -877,6 +920,7 @@ function loadSlot(slotKey) {
   cart = s.cart.map(c=>({...c}));
   promoActive = s.promoActive;
   promoSets   = s.promoSets;
+  activePromoId = s.activePromoId || null;
   const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = s.shipping;
   const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = s.discount;
 }
@@ -897,7 +941,7 @@ function switchSlot(slotKey) {
   loadSlot(slotKey);
   // update slot button highlights (only store sub-slots have buttons)
   ['store_a','store_b'].forEach(k => {
-    const btn = document.getElementById('slot'+k.replace('_','_')+'Btn') || document.getElementById('slot'+k+'Btn');
+    const btn = document.getElementById('slot'+k+'Btn');
     if(btn) btn.classList.toggle('active', k===slotKey);
   });
   updateSlotBadges();
@@ -912,8 +956,9 @@ const CHANNELS = {
   ecom:  { key:'ecom',  label:'E-com',    icon:'🛍️', price:49, hasShipping:true,  hasPromo:false, hasDiscount:true,  methods:['shopee','tiktok'] }
 };
 function priceFor(p) {
-  // E-com is a flat rate regardless of which flavor; store/line use the product's own price (normally 39)
-  return salesChannel === 'ecom' ? CHANNELS.ecom.price : (parseFloat(p.price) || CHANNELS[salesChannel].price);
+  if (salesChannel === 'ecom') return p.price_ecom != null ? p.price_ecom : CHANNELS.ecom.price;
+  if (salesChannel === 'line') return p.price_line != null ? p.price_line : (parseFloat(p.price) || CHANNELS.line.price);
+  return parseFloat(p.price) || CHANNELS.store.price;
 }
 // Map a payment method back to its channel — used for orders saved before the `channel` field existed
 function channelFromMethod(method) {
@@ -923,6 +968,34 @@ function channelFromMethod(method) {
 }
 function orderChannel(o) { return o.channel || channelFromMethod(o.method); }
 // promoActive and promoSets are declared in the cart slots section above
+let promos = []; // loaded from Supabase promos table
+let activePromoId = null; // per active slot — which promo is selected
+
+async function loadPromos() {
+  const data = await sb('promos?select=*&order=sort_order');
+  promos = (data || []).map(p => ({
+    id: String(p.id),
+    name: String(p.name || ''),
+    type: String(p.type || 'set'),
+    set_size: parseInt(p.set_size) || 3,
+    set_price: parseFloat(p.set_price) || 100,
+    discount_amount: parseFloat(p.discount_amount) || 0,
+    discount_pct: parseFloat(p.discount_pct) || 0,
+    channels: Array.isArray(p.channels) ? p.channels : (p.channels ? JSON.parse(p.channels) : ['store','line']),
+    active: p.active !== false,
+    sort_order: parseInt(p.sort_order) || 0
+  }));
+}
+async function savePromoDB(p) {
+  const body = {...p, channels: JSON.stringify(p.channels)};
+  await sb('promos?id=eq.'+p.id, {method:'UPSERT', body, prefer:'return=minimal', headers:{'Prefer':'resolution=merge-duplicates'}});
+}
+async function deletePromoDB(id) {
+  await sb('promos?id=eq.'+id, {method:'DELETE', prefer:'return=minimal'});
+}
+function promosForChannel(ch) {
+  return promos.filter(p => p.active && p.channels.includes(ch));
+}
 let cashReceived = 0;
 let cashKeyBuffer = '';
 let adminPin = '1234';
@@ -939,6 +1012,8 @@ async function loadProducts() {
     name: String(p.name || ''),
     sku: String(p.sku || ''),
     price: parseFloat(p.price) || 0,
+    price_line: p.price_line != null ? parseFloat(p.price_line) : null,
+    price_ecom: p.price_ecom != null ? parseFloat(p.price_ecom) : null,
     emoji: String(p.emoji || '🍌'),
     active: p.active === true || p.active === 'true',
     is_promo: p.is_promo === true || p.is_promo === 'true',
@@ -1031,7 +1106,7 @@ async function init() {
   async function tryConnect() {
     try {
       subEl.textContent = 'กำลังเชื่อมต่อ Supabase' + (retryCount>0?' (ครั้งที่ '+retryCount+')':'') + '...';
-      await Promise.all([loadProducts(), loadOrders(), loadEOD(), loadAdminPin()]);
+      await Promise.all([loadProducts(), loadOrders(), loadEOD(), loadAdminPin(), loadPromos()]);
       setSyncDot('ok');
       loadingEl.style.display = 'none';
       renderProducts();
@@ -1221,102 +1296,128 @@ function renderCart() {
     </div>`).join('');
 }
 
-// ============ PROMO LOGIC ============
-// Smart promo: apply discount to cheapest items first
-// All items are 39 so discount = promoSets * (39*3 - 100) = promoSets * 17
-
-// Tap promo: each tap = +1 set, tap beyond max = reset to 0
-function tapPromo() {
-  const maxSets = getMaxPromoSets();
-  if (maxSets === 0) return;
-  promoSets = (promoSets >= maxSets) ? 0 : promoSets + 1;
-  promoActive = promoSets > 0;
+// ============ PROMO LOGIC (dynamic) ============
+function getActivePromo() {
+  return promos.find(p => p.id === activePromoId) || null;
+}
+function getMaxSetsForPromo(promo) {
+  if (!promo || promo.type !== 'set') return 0;
+  const totalQty = cart.reduce((s,c) => s + (Number(c.qty)||0), 0);
+  return Math.floor(totalQty / promo.set_size);
+}
+function tapPromo(promoId) {
+  const promo = promos.find(p => p.id === promoId); if (!promo) return;
+  if (activePromoId !== promoId) {
+    // Switch to this promo, start at 1 set (or activate discount)
+    activePromoId = promoId;
+    promoSets = promo.type === 'set' ? 1 : 1;
+    promoActive = true;
+  } else if (promo.type === 'set') {
+    // Same set promo tapped again — cycle sets or reset
+    const max = getMaxSetsForPromo(promo);
+    promoSets = (promoSets >= max) ? 0 : promoSets + 1;
+    promoActive = promoSets > 0;
+    if (!promoActive) activePromoId = null;
+  } else {
+    // Non-set promo — toggle off
+    promoActive = false; promoSets = 0; activePromoId = null;
+  }
   updateSummary();
-  if (promoSets > 0) showToast('🎁 โปร ' + promoSets + ' เซ็ต = ฿' + (promoSets * 100));
+  if (promoActive) showToast('🎁 ' + promo.name);
 }
 function resetPromo() {
-  promoSets = 0; promoActive = false;
+  promoActive = false; promoSets = 0; activePromoId = null;
   updateSummary();
 }
-function getMaxPromoSets() {
-  const totalQty = cart.reduce((s,c) => s + (Number(c.qty)||0), 0);
-  return Math.floor(totalQty / PROMO_SET_SIZE);
+
+// Render all promo buttons for the current channel into #promoBtnsContainer
+function renderPromoBtns() {
+  const container = document.getElementById('promoBtnsContainer');
+  if (!container) return;
+  const channelPromos = promosForChannel(salesChannel);
+  if (!channelPromos.length) { container.innerHTML = ''; return; }
+  const totalQty = cart.reduce((s,c)=>s+c.qty,0);
+  const activePromo = getActivePromo();
+  container.innerHTML = channelPromos.map(promo => {
+    const isActive = activePromoId === promo.id && promoActive;
+    let btnLabel = '🎁 ' + promo.name;
+    let hint = '';
+    let disabled = false;
+    if (promo.type === 'set') {
+      const max = getMaxSetsForPromo(promo);
+      disabled = totalQty < promo.set_size;
+      if (isActive) btnLabel = `🎁 ${promo.name} (${promoSets} เซ็ต${max > promoSets ? ' — กดเพิ่ม' : ' — max'})`;
+      hint = disabled
+        ? `เพิ่มสินค้าอย่างน้อย ${promo.set_size} ชิ้นเพื่อใช้โปรนี้`
+        : isActive ? `ใช้ ${promoSets} เซ็ต = ${promoSets*promo.set_size} ถุง ฿${promoSets*promo.set_price}` : `มี ${totalQty} ชิ้น → กดเพื่อใช้`;
+    } else if (promo.type === 'fixed') {
+      hint = isActive ? `ลด ฿${promo.discount_amount}` : `กดเพื่อใช้ส่วนลด ฿${promo.discount_amount}`;
+    } else {
+      hint = isActive ? `ลด ${promo.discount_pct}%` : `กดเพื่อใช้ส่วนลด ${promo.discount_pct}%`;
+    }
+    return `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="promo-btn${isActive?' active':''}" ${disabled?'disabled':''} onclick="tapPromo('${promo.id}')" style="flex:1">${btnLabel}</button>
+          ${isActive ? `<button class="promo-reset-btn" onclick="resetPromo()">✕</button>` : ''}
+        </div>
+        <div class="promo-hint">${hint}</div>
+      </div>`;
+  }).join('');
 }
-function calcPromoDiscount() {
-  if (!promoActive || promoSets === 0) return 0;
-  // Each set: normal = 3*39 = 117, promo = 100, discount = 17
-  return promoSets * (PROMO_SET_SIZE * PROMO_UNIT_PRICE - PROMO_SET_PRICE);
+
+function calcPromoBaseTotal(sub, promo) {
+  if (!promo || !promoActive) return sub;
+  if (promo.type === 'set' && promoSets > 0) {
+    const totalQtyInCart = cart.reduce((s,c)=>s+(parseInt(c.qty)||0),0);
+    const setItems = promoSets * promo.set_size;
+    const remaining = Math.max(0, totalQtyInCart - setItems);
+    const unitPrice = totalQtyInCart > 0 ? (sub / totalQtyInCart) : (CHANNELS[salesChannel]?.price || 39);
+    return Math.round((promoSets * promo.set_price) + (remaining * unitPrice));
+  }
+  if (promo.type === 'fixed') return Math.max(0, sub - promo.discount_amount);
+  if (promo.type === 'percent') return Math.max(0, Math.round(sub * (1 - promo.discount_pct/100)));
+  return sub;
 }
 function updateSummary() {
   const ch = CHANNELS[salesChannel];
   const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
-  console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
   const totalQty = cart.reduce((s,c) => s + c.qty, 0);
-  const maxSets = ch.hasPromo ? getMaxPromoSets() : 0;
+  const activePromo = getActivePromo();
 
-  // Update promo button state (only relevant for channels with promo enabled)
-  const promoBtn = document.getElementById('promoBigBtn');
-  const resetBtn = document.getElementById('promoResetBtn');
-  const promoHint = document.getElementById('promoHint');
-  if (!ch.hasPromo) { promoActive = false; promoSets = 0; }
-  // Clamp promoSets if cart changed
-  if (promoSets > maxSets) { promoSets = maxSets; if (maxSets===0){ promoActive=false; promoSets=0; } }
-
-  if (ch.hasPromo) {
-    if (totalQty >= PROMO_SET_SIZE) {
-      if (promoBtn) promoBtn.disabled = false;
-      if (promoSets === 0) {
-        if (promoBtn) { promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
-        if (resetBtn) resetBtn.style.display = 'none';
-        if (promoHint) promoHint.textContent = `มี ${totalQty} ชิ้น → แตะเพื่อเพิ่มทีละเซ็ต (สูงสุด ${maxSets} เซ็ต)`;
-      } else {
-        if (promoBtn) { promoBtn.classList.add('active'); promoBtn.textContent = `🎁 โปร ${promoSets} เซ็ต (กดเพิ่ม / ครบ ${maxSets} reset)`; }
-        if (resetBtn) resetBtn.style.display = 'block';
-        if (promoHint) promoHint.textContent = `ใช้โปร ${promoSets} เซ็ต = ${promoSets*3} ถุง ฿${promoSets*100}`;
-      }
-    } else {
-      if (promoBtn) { promoBtn.disabled = true; promoBtn.classList.remove('active'); promoBtn.textContent = '🎁 โปร 3 ถุง ฿100'; }
-      if (resetBtn) resetBtn.style.display = 'none';
-      if (promoHint) promoHint.textContent = `เพิ่มสินค้าอย่างน้อย ${PROMO_SET_SIZE} ชิ้นเพื่อใช้โปร`;
-      if (promoActive) { promoActive = false; promoSets = 0; }
-    }
+  // Clamp set promo if cart shrank
+  if (activePromo && activePromo.type === 'set') {
+    const max = getMaxSetsForPromo(activePromo);
+    if (promoSets > max) { promoSets = max; promoActive = promoSets > 0; if (!promoActive) activePromoId = null; }
   }
+  if (!ch.hasPromo) { promoActive = false; promoSets = 0; activePromoId = null; }
 
-  // For promo: items in sets pay promo price, rest pay normal
-  // total = (promoSets * 100) + (remaining items * 39)
-  const shipping = ch.hasShipping ? (parseFloat((document.getElementById('shippingInput')||{}).value) || 0) : 0;
+  // Render dynamic promo buttons
+  renderPromoBtns();
+
+  const shipping      = ch.hasShipping ? (parseFloat((document.getElementById('shippingInput')||{}).value) || 0) : 0;
   const manualDiscount = ch.hasDiscount ? (parseFloat((document.getElementById('discountInput')||{}).value) || 0) : 0;
-  let baseTotal;
-  if (ch.hasPromo && promoActive && promoSets > 0) {
-    // promoSets sets pay 100 each, remaining items pay normal price
-    const totalQtyInCart = cart.reduce((s,c)=>s+(parseInt(c.qty)||0),0);
-    const promoItemsCount = promoSets * PROMO_SET_SIZE;
-    const remainItems = Math.max(0, totalQtyInCart - promoItemsCount);
-    // remaining items: use actual unit price from cart (weighted avg)
-    const unitPrice = totalQtyInCart > 0 ? Math.round(sub / totalQtyInCart) : PROMO_UNIT_PRICE;
-    baseTotal = Math.round((promoSets * PROMO_SET_PRICE) + (remainItems * unitPrice));
-  } else {
-    baseTotal = sub;
-  }
+
+  let baseTotal = calcPromoBaseTotal(sub, activePromo);
   baseTotal = Math.max(0, baseTotal - manualDiscount);
   const total = Math.round(baseTotal + shipping);
   currentTotal = total;
-  console.log('updateSummary: sub='+sub+' promoSets='+promoSets+' manualDiscount='+manualDiscount+' baseTotal='+baseTotal+' shipping='+shipping+' total='+total);
-  const actualDisc = sub - manualDiscount - baseTotal; // promo-only discount portion (excludes manual discount)
 
-  document.getElementById('subtotalDisplay').textContent = '฿' + sub;
+  const actualDisc = sub - manualDiscount - baseTotal;
+
+  document.getElementById('subtotalDisplay').textContent = '฿' + sub.toLocaleString();
   const promoRow = document.getElementById('promoRow');
   const promoSetsLabelEl = document.getElementById('promoSetsLabel');
   const promoDiscEl = document.getElementById('promoDiscDisplay');
-  const totalEl = document.getElementById('totalDisplay');
-  const subtotalEl = document.getElementById('subtotalDisplay');
-  if (ch.hasPromo && promoActive && promoSets > 0 && actualDisc > 0) {
+  if (ch.hasPromo && promoActive && actualDisc > 0) {
     if (promoRow) promoRow.style.display = 'flex';
-    if (promoSetsLabelEl) promoSetsLabelEl.textContent = promoSets;
-    if (promoDiscEl) promoDiscEl.textContent = '-฿' + actualDisc.toLocaleString();
+    if (promoSetsLabelEl) promoSetsLabelEl.textContent = activePromo?.type==='set' ? promoSets+' เซ็ต' : activePromo?.name||'';
+    if (promoDiscEl) promoDiscEl.textContent = '-฿' + Math.round(sub - baseTotal - manualDiscount + manualDiscount > 0 ? sub - baseTotal : 0).toLocaleString();
   } else {
     if (promoRow) promoRow.style.display = 'none';
   }
+  const totalEl = document.getElementById('totalDisplay');
+  const subtotalEl = document.getElementById('subtotalDisplay');
   if (totalEl) totalEl.textContent = '฿' + total.toLocaleString();
   if (subtotalEl) subtotalEl.textContent = '฿' + sub.toLocaleString();
 }
@@ -1390,7 +1491,9 @@ async function confirmPayment() {
   console.log('cart:', JSON.stringify(cart.map(c=>({n:c.name,p:c.price,q:c.qty}))), 'sub:', sub);
   const shipping = ch.hasShipping ? (parseFloat((document.getElementById('shippingInput')||{}).value) || 0) : 0;
   const manualDiscount = ch.hasDiscount ? (parseFloat((document.getElementById('discountInput')||{}).value) || 0) : 0;
-  const promoDisc = sub - manualDiscount - (currentTotal - shipping);
+  const activePromo = getActivePromo();
+  const promoBaseTotal = calcPromoBaseTotal(sub, activePromo);
+  const promoDisc = sub - promoBaseTotal;
   const order = {
     id: 'ORD-' + Date.now(),
     ref: '#' + String(orders.length + 1).padStart(4,'0'),
@@ -1398,6 +1501,7 @@ async function confirmPayment() {
     items: cart.map(c => ({...c})),
     subtotal: sub,
     promo_discount: Math.max(0, promoDisc),
+    promo_name: activePromo ? activePromo.name : null,
     manual_discount: manualDiscount,
     channel: salesChannel,
     total: currentTotal,
@@ -1438,7 +1542,7 @@ function showSuccess(o) {
 }
 
 function newOrder() {
-  cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0;
+  cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0; activePromoId = null;
   const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = '';
   const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = '';
   // persist the cleared state back into the slot
@@ -2409,11 +2513,16 @@ function renderManage() {
     <div class="prod-row">
       <div class="prod-emoji">${p.emoji}</div>
       <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-sku">${p.sku}</div></div>
-      <div class="prod-price">฿${p.price}</div>
+      <div class="prod-price" style="font-size:10px;text-align:right;line-height:1.6">
+        <span style="display:block">🏪 ฿${p.price}</span>
+        <span style="display:block;color:var(--line)">💬 ฿${p.price_line != null ? p.price_line : p.price}</span>
+        <span style="display:block;color:#EE4D2D">🛍️ ฿${p.price_ecom != null ? p.price_ecom : CHANNELS.ecom.price}</span>
+      </div>
       <button class="tog-btn ${p.active?'on':'off'}" onclick="toggleProd('${p.id}')">${p.active?'เปิด':'ปิด'}</button>
       <button class="icon-btn" onclick="editProd('${p.id}')">✏️</button>
       <button class="icon-btn" onclick="deleteProd('${p.id}')">🗑</button>
     </div>`).join('');
+  renderPromosPanel();
 }
 async function toggleProd(id) {
   const p = products.find(x=>x.id===id); if (!p) return;
@@ -2426,13 +2535,15 @@ function editProd(id) {
   document.getElementById('newPName').value = p.name;
   document.getElementById('newPSKU').value = p.sku;
   document.getElementById('newPPrice').value = p.price;
+  document.getElementById('newPPriceLine').value = p.price_line != null ? p.price_line : '';
+  document.getElementById('newPPriceEcom').value = p.price_ecom != null ? p.price_ecom : '';
   document.getElementById('newPEmoji').value = p.emoji;
   document.getElementById('newPIsPromo').checked = !!p.is_promo;
   openModal('addProductModal');
 }
 function openAddProduct() {
   document.getElementById('editProductId').value = '';
-  ['newPName','newPSKU','newPPrice','newPEmoji'].forEach(id=>document.getElementById(id).value='');
+  ['newPName','newPSKU','newPPrice','newPPriceLine','newPPriceEcom','newPEmoji'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('newPIsPromo').checked = false;
   openModal('addProductModal');
 }
@@ -2447,10 +2558,17 @@ async function saveProduct() {
   const name = document.getElementById('newPName').value.trim();
   const sku = document.getElementById('newPSKU').value.trim();
   const price = parseFloat(document.getElementById('newPPrice').value);
+  const priceLine = document.getElementById('newPPriceLine').value.trim();
+  const priceEcom = document.getElementById('newPPriceEcom').value.trim();
   const emoji = document.getElementById('newPEmoji').value.trim() || '🍌';
   const is_promo = document.getElementById('newPIsPromo').checked;
   if (!name||!sku||!price) { showToast('กรุณากรอกข้อมูลให้ครบ'); return; }
-  const p = {id: id||'p'+Date.now(), name, sku, price, emoji, active:true, is_promo, sort_order: products.length+1};
+  const p = {
+    id: id||'p'+Date.now(), name, sku, price, emoji, active:true, is_promo,
+    price_line: priceLine ? parseFloat(priceLine) : null,
+    price_ecom: priceEcom ? parseFloat(priceEcom) : null,
+    sort_order: products.length+1
+  };
   setSyncDot('loading');
   try {
     await saveProductDB(p);
@@ -2461,6 +2579,105 @@ async function saveProduct() {
     renderProducts(); renderManage();
     showToast('✅ บันทึกสินค้าแล้ว');
   } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ'); }
+}
+
+// ============ PROMO ADMIN ============
+function renderPromosPanel() {
+  const el = document.getElementById('promosPanel');
+  if (!el) return;
+  if (!promos.length) { el.innerHTML = '<div style="color:var(--gray);font-size:12px;padding:8px 0">ยังไม่มีโปร — กดเพิ่มโปรใหม่</div>'; return; }
+  const chIcon = {store:'🏪',line:'💬',ecom:'🛍️'};
+  el.innerHTML = promos.map(p => `
+    <div class="prod-row">
+      <div style="font-size:20px">🎁</div>
+      <div class="prod-info">
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-sku">${p.type==='set'?`${p.set_size} ถุง ฿${p.set_price}`:p.type==='fixed'?`ลด ฿${p.discount_amount}`:`ลด ${p.discount_pct}%`} · ${p.channels.map(c=>chIcon[c]).join(' ')}</div>
+      </div>
+      <button class="tog-btn ${p.active?'on':'off'}" onclick="togglePromo('${p.id}')">${p.active?'เปิด':'ปิด'}</button>
+      <button class="icon-btn" onclick="editPromo('${p.id}')">✏️</button>
+      <button class="icon-btn" onclick="deletePromo('${p.id}')">🗑</button>
+    </div>`).join('');
+}
+function onPromoTypeChange() {
+  const t = document.getElementById('newPromoType').value;
+  document.getElementById('promoParamSet').style.display = t==='set'?'grid':'none';
+  document.getElementById('promoParamFixed').style.display = t==='fixed'?'block':'none';
+  document.getElementById('promoParamPct').style.display = t==='percent'?'block':'none';
+}
+function openAddPromo() {
+  document.getElementById('editPromoId').value = '';
+  document.getElementById('newPromoName').value = '';
+  document.getElementById('newPromoType').value = 'set';
+  document.getElementById('newPromoSetSize').value = '3';
+  document.getElementById('newPromoSetPrice').value = '100';
+  document.getElementById('newPromoFixed').value = '';
+  document.getElementById('newPromoPct').value = '';
+  document.getElementById('promoChStore').checked = true;
+  document.getElementById('promoChLine').checked = true;
+  document.getElementById('promoChEcom').checked = false;
+  document.getElementById('newPromoActive').checked = true;
+  onPromoTypeChange();
+  openModal('addPromoModal');
+}
+function editPromo(id) {
+  const p = promos.find(x=>x.id===id); if (!p) return;
+  document.getElementById('editPromoId').value = p.id;
+  document.getElementById('newPromoName').value = p.name;
+  document.getElementById('newPromoType').value = p.type;
+  document.getElementById('newPromoSetSize').value = p.set_size;
+  document.getElementById('newPromoSetPrice').value = p.set_price;
+  document.getElementById('newPromoFixed').value = p.discount_amount;
+  document.getElementById('newPromoPct').value = p.discount_pct;
+  document.getElementById('promoChStore').checked = p.channels.includes('store');
+  document.getElementById('promoChLine').checked = p.channels.includes('line');
+  document.getElementById('promoChEcom').checked = p.channels.includes('ecom');
+  document.getElementById('newPromoActive').checked = p.active;
+  onPromoTypeChange();
+  openModal('addPromoModal');
+}
+async function savePromo() {
+  const id = document.getElementById('editPromoId').value;
+  const name = document.getElementById('newPromoName').value.trim();
+  const type = document.getElementById('newPromoType').value;
+  if (!name) { showToast('กรุณาระบุชื่อโปร'); return; }
+  const channels = [];
+  if (document.getElementById('promoChStore').checked) channels.push('store');
+  if (document.getElementById('promoChLine').checked) channels.push('line');
+  if (document.getElementById('promoChEcom').checked) channels.push('ecom');
+  if (!channels.length) { showToast('เลือกช่องทางอย่างน้อย 1 อัน'); return; }
+  const p = {
+    id: id || 'promo_'+Date.now(),
+    name, type, channels,
+    set_size: parseInt(document.getElementById('newPromoSetSize').value)||3,
+    set_price: parseFloat(document.getElementById('newPromoSetPrice').value)||100,
+    discount_amount: parseFloat(document.getElementById('newPromoFixed').value)||0,
+    discount_pct: parseFloat(document.getElementById('newPromoPct').value)||0,
+    active: document.getElementById('newPromoActive').checked,
+    sort_order: id ? (promos.find(x=>x.id===id)?.sort_order||0) : promos.length+1
+  };
+  setSyncDot('loading');
+  try {
+    await savePromoDB(p);
+    if (id) { const idx=promos.findIndex(x=>x.id===id); if(idx>=0) promos[idx]=p; }
+    else promos.push(p);
+    setSyncDot('ok');
+    closeModal('addPromoModal');
+    renderManage(); updateSummary();
+    showToast('✅ บันทึกโปรแล้ว');
+  } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
+}
+async function togglePromo(id) {
+  const p = promos.find(x=>x.id===id); if (!p) return;
+  p.active = !p.active;
+  await savePromoDB(p); renderManage(); updateSummary();
+}
+async function deletePromo(id) {
+  if (!confirm('ลบโปรนี้?')) return;
+  await deletePromoDB(id);
+  promos = promos.filter(p=>p.id!==id);
+  if (activePromoId === id) { promoActive=false; promoSets=0; activePromoId=null; }
+  renderManage(); updateSummary();
 }
 
 async function clearAllData() {
