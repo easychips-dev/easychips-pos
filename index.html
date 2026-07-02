@@ -1505,7 +1505,6 @@ async function confirmPayment() {
     items: cart.map(c => ({...c})),
     subtotal: sub,
     promo_discount: Math.max(0, promoDisc),
-    promo_name: activePromo ? activePromo.name : null,
     manual_discount: manualDiscount,
     channel: salesChannel,
     total: currentTotal,
