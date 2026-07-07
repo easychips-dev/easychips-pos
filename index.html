@@ -1548,12 +1548,8 @@ function newOrder() {
   cart = []; cashReceived = 0; cashKeyBuffer = ''; promoActive = false; promoSets = 0; activePromoId = null;
   const shipEl = document.getElementById('shippingInput'); if(shipEl) shipEl.value = '';
   const discEl = document.getElementById('discountInput'); if(discEl) discEl.value = '';
-  // persist the cleared state back into the slot
   saveSlot();
   updateSlotBadges();
-  document.getElementById('promoBigBtn').classList.remove('active');
-  document.getElementById('promoBigBtn').textContent = '🎁 โปร 3 ถุง ฿100';
-  document.getElementById('promoResetBtn').style.display = 'none';
   renderCart(); updateSummary(); closeModal('successModal');
   showToast('✅ พร้อมรับออเดอร์ใหม่');
 }
