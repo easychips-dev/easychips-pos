@@ -1628,16 +1628,7 @@ async function confirmSplitPayment() {
     setSyncDot('ok'); showSuccess(order); updateSummaryBar();
   } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
 }
-  // Show non-cash methods only as first method options
-  const nonCashMethods = CHANNELS.store.methods.filter(m => m !== 'cash');
-  document.getElementById('splitMethodBtns').innerHTML =
-    nonCashMethods.map(m =>
-      `<button class="split-m-btn" id="splitMBtn_${m}" onclick="selectSplitFirstMethod('${m}')">
-        ${METHOD_META[m].icon} ${METHOD_META[m].label}
-      </button>`).join('') +
-    `<button class="split-m-btn" id="splitMBtn_cashonly" onclick="selectSplitCashOnly()">
-      💵 เงินสดเท่านั้น
-    </button>`;
+
   document.getElementById('splitFirstAmtRow').style.display = 'none';
 
 
