@@ -854,16 +854,71 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 <div class="modal-overlay" id="splitPayModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">💳 จ่ายหลายช่องทาง</div>
+      <div class="modal-title">💳 แยกจ่าย</div>
       <button class="modal-close" onclick="closeModal('splitPayModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--gray);margin-bottom:8px">เลือกช่องทางสูงสุด 2 อัน แล้วใส่จำนวนเงินแต่ละช่อง</div>
-      <div style="font-size:13px;font-weight:800;color:var(--brown);margin-bottom:8px">ยอดรวม: <span id="splitTotal">฿0</span></div>
-      <div class="split-method-row" id="splitMethodBtns"></div>
-      <div id="splitAmountRows"></div>
-      <div class="split-remain" id="splitRemain"></div>
-      <button class="btn-save-prod" id="splitConfirmBtn" onclick="confirmSplitPayment()" disabled>✅ ยืนยันการชำระ</button>
+      <div style="font-size:14px;font-weight:800;color:var(--brown);margin-bottom:12px">
+        ยอดรวม: <span id="splitTotal">฿0</span>
+      </div>
+
+      <!-- Step 1: pick first method (QR or Gov) -->
+      <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">ช่องทางแรก</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="split-m-btn" id="splitBtn_qr"  onclick="onPickFirst('qr')">📱 QR</button>
+        <button class="split-m-btn" id="splitBtn_gov" onclick="onPickFirst('gov')">🏛️ โครงการรัฐ</button>
+      </div>
+
+      <!-- Step 1b: amount for first method -->
+      <div id="splitFirstRow" style="display:none">
+        <div class="split-amount-row">
+          <div class="split-amount-label" id="splitFirstLabel">—</div>
+          <input type="number" class="split-amount-input" id="splitFirstAmt"
+            placeholder="0" min="0" oninput="onSplitFirstAmt(this.value)">
+          <span style="font-size:12px;color:var(--gray)">฿</span>
+        </div>
+        <div style="font-size:11px;color:var(--gray);text-align:right;margin-bottom:8px" id="splitFirstHint"></div>
+      </div>
+
+      <!-- Step 2: pick second method -->
+      <div id="splitSecondSection" style="display:none">
+        <div style="height:1px;background:#EDE7D9;margin:8px 0"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">ช่องทางที่สอง <span style="font-weight:400;font-size:10px" id="splitRemainLabel"></span></div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="split-m-btn" id="split2Btn_qr"  onclick="onPickSecond('qr')">📱 QR</button>
+          <button class="split-m-btn" id="split2Btn_gov" onclick="onPickSecond('gov')">🏛️ โครงการรัฐ</button>
+          <button class="split-m-btn" id="split2Btn_cash" onclick="onPickSecond('cash')">💵 เงินสด</button>
+        </div>
+      </div>
+
+      <!-- Step 2b: cash receive (only when second = cash) -->
+      <div id="splitCashSection" style="display:none">
+        <div class="split-amount-row" style="background:var(--banana);margin-bottom:8px">
+          <div class="split-amount-label" style="color:var(--brown)">💵 ส่วนที่ต้องจ่าย</div>
+          <div style="font-size:16px;font-weight:800;color:var(--brown)" id="splitCashPortion">฿0</div>
+        </div>
+        <div id="splitCashQuickBtns" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>
+        <div class="split-amount-row">
+          <div class="split-amount-label">รับมา</div>
+          <input type="number" class="split-amount-input" id="splitCashIn"
+            placeholder="0" min="0" oninput="onSplitCashIn(this.value)">
+          <span style="font-size:12px;color:var(--gray)">฿</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 4px;font-size:13px">
+          <span style="color:var(--gray)">เงินทอน</span>
+          <span style="font-weight:800" id="splitChangeDisplay">฿-</span>
+        </div>
+      </div>
+
+      <!-- Step 2b: non-cash second → auto filled -->
+      <div id="splitNonCash2Section" style="display:none">
+        <div class="split-amount-row" style="background:var(--green-light)">
+          <div class="split-amount-label" id="split2AutoLabel" style="color:var(--green)">—</div>
+          <div style="font-size:15px;font-weight:800;color:var(--green)" id="split2AutoAmt">฿0</div>
+        </div>
+      </div>
+
+      <button class="btn-save-prod" id="splitConfirmBtn" onclick="confirmSplitPayment()" disabled style="margin-top:12px">✅ ยืนยันการชำระ</button>
     </div>
   </div>
 </div>
@@ -1408,102 +1463,184 @@ function confirmMixedFlavor() {
 
 // ============ SPLIT PAYMENT ============
 let splitSelections = []; // [{method, amount}]
+// ============ SPLIT PAYMENT ============
+let splitState = { firstMethod:null, firstAmt:0, secondMethod:null };
+
 function openSplitPay() {
   if (!cart.length) { showToast('กรุณาเพิ่มสินค้าก่อน'); return; }
   if (currentTotal <= 0) { showToast('ยอดรวมต้องมากกว่า 0'); return; }
-  splitSelections = [];
+  splitState = { firstMethod:null, firstAmt:0, secondMethod:null };
   document.getElementById('splitTotal').textContent = '฿' + currentTotal.toLocaleString();
-  const methods = CHANNELS.store.methods; // ['cash','qr','gov']
-  document.getElementById('splitMethodBtns').innerHTML = methods.map(m =>
-    `<button class="split-m-btn" id="splitMBtn_${m}" onclick="toggleSplitMethod('${m}')">
-      ${METHOD_META[m].icon} ${METHOD_META[m].label}
-    </button>`).join('');
-  document.getElementById('splitAmountRows').innerHTML = '';
-  document.getElementById('splitRemain').textContent = '';
+  ['qr','gov'].forEach(m => document.getElementById('splitBtn_'+m)?.classList.remove('selected'));
+  document.getElementById('splitFirstRow').style.display = 'none';
+  document.getElementById('splitSecondSection').style.display = 'none';
+  document.getElementById('splitCashSection').style.display = 'none';
+  document.getElementById('splitNonCash2Section').style.display = 'none';
   document.getElementById('splitConfirmBtn').disabled = true;
   openModal('splitPayModal');
 }
-function toggleSplitMethod(method) {
-  const existing = splitSelections.find(s => s.method === method);
-  if (existing) {
-    splitSelections = splitSelections.filter(s => s.method !== method);
-    document.getElementById('splitMBtn_'+method)?.classList.remove('selected');
+
+function onPickFirst(method) {
+  splitState.firstMethod = method;
+  splitState.firstAmt = currentTotal; // default = full amount
+  splitState.secondMethod = null;
+  ['qr','gov'].forEach(m => document.getElementById('splitBtn_'+m)?.classList.toggle('selected', m===method));
+  document.getElementById('splitFirstLabel').textContent = METHOD_META[method].icon+' '+METHOD_META[method].label;
+  document.getElementById('splitFirstAmt').value = currentTotal;
+  document.getElementById('splitFirstHint').textContent = '';
+  document.getElementById('splitFirstRow').style.display = '';
+  document.getElementById('splitSecondSection').style.display = 'none';
+  document.getElementById('splitCashSection').style.display = 'none';
+  document.getElementById('splitNonCash2Section').style.display = 'none';
+  document.getElementById('splitConfirmBtn').disabled = false; // full amount via first method → valid
+  renderSplit2Btns();
+}
+
+function onSplitFirstAmt(val) {
+  const amt = Math.max(0, parseFloat(val)||0);
+  splitState.firstAmt = amt;
+  const remain = currentTotal - amt;
+  document.getElementById('splitFirstHint').textContent =
+    remain > 0 ? `คงเหลือ ฿${remain.toLocaleString()} → เลือกช่องทางที่สองด้านล่าง`
+    : remain === 0 ? '' : `⚠️ เกินยอดรวม`;
+  if (remain > 0) {
+    document.getElementById('splitSecondSection').style.display = '';
+    document.getElementById('splitRemainLabel').textContent = `(คงเหลือ ฿${remain.toLocaleString()})`;
+    renderSplit2Btns();
+    // reset second method selection
+    if (splitState.secondMethod) onPickSecond(splitState.secondMethod);
+    else {
+      document.getElementById('splitCashSection').style.display = 'none';
+      document.getElementById('splitNonCash2Section').style.display = 'none';
+    }
+    document.getElementById('splitConfirmBtn').disabled = true;
+  } else if (remain === 0) {
+    document.getElementById('splitSecondSection').style.display = 'none';
+    document.getElementById('splitCashSection').style.display = 'none';
+    document.getElementById('splitNonCash2Section').style.display = 'none';
+    splitState.secondMethod = null;
+    document.getElementById('splitConfirmBtn').disabled = false;
   } else {
-    if (splitSelections.length >= 2) { showToast('เลือกได้สูงสุด 2 ช่องทาง'); return; }
-    splitSelections.push({method, amount: 0});
-    document.getElementById('splitMBtn_'+method)?.classList.add('selected');
+    document.getElementById('splitSecondSection').style.display = 'none';
+    document.getElementById('splitCashSection').style.display = 'none';
+    document.getElementById('splitNonCash2Section').style.display = 'none';
+    document.getElementById('splitConfirmBtn').disabled = true;
   }
-  renderSplitAmountRows();
 }
-function renderSplitAmountRows() {
-  document.getElementById('splitAmountRows').innerHTML = splitSelections.map((s,i) => `
-    <div class="split-amount-row">
-      <div class="split-amount-label">${METHOD_META[s.method].icon} ${METHOD_META[s.method].label}</div>
-      <input type="number" class="split-amount-input" id="splitAmt_${s.method}" 
-        placeholder="0" value="${s.amount || ''}" min="0"
-        oninput="onSplitAmtChange('${s.method}', this.value)">
-      <span style="font-size:12px;color:var(--gray)">฿</span>
-    </div>`).join('');
-  updateSplitRemain();
+
+function renderSplit2Btns() {
+  ['qr','gov','cash'].forEach(m => {
+    const btn = document.getElementById('split2Btn_'+m);
+    if (!btn) return;
+    const sameAsFirst = m === splitState.firstMethod;
+    btn.disabled = sameAsFirst;
+    btn.style.opacity = sameAsFirst ? '0.35' : '1';
+    btn.style.cursor = sameAsFirst ? 'not-allowed' : 'pointer';
+    btn.classList.toggle('selected', m === splitState.secondMethod);
+  });
 }
-function onSplitAmtChange(method, val) {
-  const s = splitSelections.find(x => x.method === method);
-  if (s) s.amount = parseFloat(val) || 0;
-  updateSplitRemain();
-}
-function updateSplitRemain() {
-  const paid = splitSelections.reduce((s,x) => s + (x.amount||0), 0);
-  const remain = currentTotal - paid;
-  const el = document.getElementById('splitRemain');
-  const btn = document.getElementById('splitConfirmBtn');
-  if (remain === 0 && splitSelections.length > 0) {
-    el.textContent = '✅ ครบแล้ว'; el.className = 'split-remain ok';
-    btn.disabled = false;
-  } else if (remain > 0) {
-    el.textContent = `ยังขาด ฿${remain.toLocaleString()}`; el.className = 'split-remain';
-    btn.disabled = true;
+
+function onPickSecond(method) {
+  splitState.secondMethod = method;
+  renderSplit2Btns();
+  const remain = currentTotal - splitState.firstAmt;
+  if (method === 'cash') {
+    document.getElementById('splitNonCash2Section').style.display = 'none';
+    document.getElementById('splitCashSection').style.display = '';
+    document.getElementById('splitCashPortion').textContent = '฿' + remain.toLocaleString();
+    // quick buttons: พอดี + round-ups
+    const due = remain;
+    const quickSet = new Set([due]);
+    [50,100,200,500,1000].forEach(v => { if(v>=due) quickSet.add(v); });
+    quickSet.add(Math.ceil(due/50)*50); quickSet.add(Math.ceil(due/100)*100);
+    const sorted = [...quickSet].filter(v=>v>=due).sort((a,b)=>a-b).slice(0,5);
+    document.getElementById('splitCashQuickBtns').innerHTML =
+      `<button class="cq-btn exact" onclick="setSplitCash(${due})">💵 พอดี ฿${due.toLocaleString()}</button>` +
+      sorted.filter(v=>v!==due).map(v=>`<button class="cq-btn" onclick="setSplitCash(${v})">฿${v.toLocaleString()}</button>`).join('');
+    document.getElementById('splitCashIn').value = due; // default = exact remaining
+    document.getElementById('splitCashIn').placeholder = due;
+    onSplitCashIn(due);
   } else {
-    el.textContent = `เกินมา ฿${Math.abs(remain).toLocaleString()}`; el.className = 'split-remain over';
-    btn.disabled = true;
+    document.getElementById('splitCashSection').style.display = 'none';
+    document.getElementById('splitNonCash2Section').style.display = '';
+    document.getElementById('split2AutoLabel').textContent = METHOD_META[method].icon+' '+METHOD_META[method].label+' (auto)';
+    document.getElementById('split2AutoAmt').textContent = '฿' + remain.toLocaleString();
+    document.getElementById('splitConfirmBtn').disabled = false;
   }
 }
+
+function setSplitCash(amt) {
+  document.getElementById('splitCashIn').value = amt;
+  onSplitCashIn(amt);
+}
+function onSplitCashIn(val) {
+  const cashPortion = currentTotal - splitState.firstAmt;
+  const received = parseFloat(val)||0;
+  const change = received - cashPortion;
+  const el = document.getElementById('splitChangeDisplay');
+  el.textContent = received > 0 ? '฿' + Math.max(0,change).toLocaleString() : '฿-';
+  el.style.color = received >= cashPortion ? 'var(--green)' : 'var(--red)';
+  document.getElementById('splitConfirmBtn').disabled = !(received >= cashPortion && cashPortion > 0);
+}
+
+// stubs for old refs
+function toggleSplitMethod(){}
+function renderSplitAmountRows(){}
+function onSplitNonCashChange(){}
+function updateSplitCashDisplay(){}
+function updateSplitValidation(){}
+function selectSplitFirstMethod(){}
+function selectSplitCashOnly(){}
+function setSplitCashOnly(){}
+function onSplitCashOnly(){}
+function updateSplitConfirmBtn(){}
+
 async function confirmSplitPayment() {
-  if (!splitSelections.length) return;
   const ch = CHANNELS[salesChannel];
   const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
   const activePromo = getActivePromo();
   const promoBaseTotal = calcPromoBaseTotal(sub, activePromo);
   const promoDisc = sub - promoBaseTotal;
-  const manualDiscount = 0;
+  const manualDiscount = ch.hasDiscount ? (parseFloat((document.getElementById('discountInput')||{}).value)||0) : 0;
+  const { firstMethod, firstAmt, secondMethod } = splitState;
+  const remain = currentTotal - firstAmt;
+  const cashIn = parseFloat(document.getElementById('splitCashIn')?.value)||0;
+  const splits = [];
+  if (firstAmt > 0) splits.push({method: firstMethod, amount: firstAmt});
+  if (secondMethod && remain > 0) splits.push({method: secondMethod, amount: remain, cash_received: secondMethod==='cash' ? cashIn : null});
+  const method = splits.length === 1 ? splits[0].method : 'split';
   const order = {
-    id: 'ORD-' + Date.now(),
-    ref: '#' + String(orders.length + 1).padStart(4,'0'),
-    timestamp: new Date().toISOString(),
-    items: cart.map(c => ({...c})),
-    subtotal: sub,
-    promo_discount: Math.max(0, promoDisc),
-    manual_discount: manualDiscount,
-    channel: salesChannel,
-    total: currentTotal,
-    method: 'split',
-    split_payments: JSON.stringify(splitSelections),
-    cash_received: null,
-    has_promo: promoActive && promoDisc > 0,
-    voided: false, void_reason: '', void_by: '', voided_at: null
+    id:'ORD-'+Date.now(),
+    ref:'#'+String(orders.length+1).padStart(4,'0'),
+    timestamp:new Date().toISOString(),
+    items:cart.map(c=>({...c})),
+    subtotal:sub, promo_discount:Math.max(0,promoDisc), manual_discount:manualDiscount,
+    channel:salesChannel, total:currentTotal, method,
+    split_payments:JSON.stringify(splits),
+    cash_received: secondMethod==='cash' ? cashIn : null,
+    has_promo:promoActive&&promoDisc>0,
+    voided:false, void_reason:'', void_by:'', voided_at:null
   };
   closeModal('splitPayModal');
   setSyncDot('loading');
   try {
-    await saveOrderDB(order);
-    orders.unshift(order);
-    setSyncDot('ok');
-    showSuccess(order);
-    updateSummaryBar();
-  } catch(e) {
-    setSyncDot('err');
-    showToast('❌ บันทึกไม่สำเร็จ: ' + e.message);
-  }
+    await saveOrderDB(order); orders.unshift(order);
+    setSyncDot('ok'); showSuccess(order); updateSummaryBar();
+  } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
 }
+  // Show non-cash methods only as first method options
+  const nonCashMethods = CHANNELS.store.methods.filter(m => m !== 'cash');
+  document.getElementById('splitMethodBtns').innerHTML =
+    nonCashMethods.map(m =>
+      `<button class="split-m-btn" id="splitMBtn_${m}" onclick="selectSplitFirstMethod('${m}')">
+        ${METHOD_META[m].icon} ${METHOD_META[m].label}
+      </button>`).join('') +
+    `<button class="split-m-btn" id="splitMBtn_cashonly" onclick="selectSplitCashOnly()">
+      💵 เงินสดเท่านั้น
+    </button>`;
+  document.getElementById('splitFirstAmtRow').style.display = 'none';
+
+
 function getActivePromo() {
   return promos.find(p => p.id === activePromoId) || null;
 }
