@@ -1629,8 +1629,6 @@ async function confirmSplitPayment() {
   } catch(e) { setSyncDot('err'); showToast('❌ บันทึกไม่สำเร็จ: '+e.message); }
 }
 
-  document.getElementById('splitFirstAmtRow').style.display = 'none';
-
 
 function getActivePromo() {
   return promos.find(p => p.id === activePromoId) || null;
