@@ -99,6 +99,24 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 .sum-total .sum-label{font-size:14px;font-weight:800;color:var(--brown)}
 .sum-total .sum-val{font-size:18px;font-weight:800;color:var(--brown-mid)}
 .pay-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px;margin:8px 0 5px}
+
+/* MIXED FLAVOR */
+.flavor-pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.flavor-pick-card{padding:10px 8px;border:2px solid #EDE7D9;border-radius:10px;text-align:center;cursor:pointer;background:white;transition:all .15s}
+.flavor-pick-card.selected{border-color:var(--banana);background:var(--banana);color:var(--brown)}
+.flavor-pick-card .fp-emoji{font-size:22px;display:block;margin-bottom:3px}
+.flavor-pick-card .fp-name{font-size:11px;font-weight:700}
+
+/* SPLIT PAYMENT */
+.split-method-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.split-m-btn{flex:1;min-width:70px;padding:8px 6px;border:2px solid #EDE7D9;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--gray);text-align:center}
+.split-m-btn.selected{border-color:var(--brown-mid);background:var(--brown-mid);color:white}
+.split-amount-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--gray-light);padding:8px 10px;border-radius:9px}
+.split-amount-label{font-size:12px;font-weight:700;color:var(--brown);min-width:80px}
+.split-amount-input{flex:1;border:1.5px solid #EDE7D9;border-radius:7px;padding:6px 8px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;color:var(--brown);text-align:right;outline:none;background:white}
+.split-remain{font-size:12px;color:var(--gray);text-align:right;margin-bottom:8px}
+.split-remain.ok{color:var(--green);font-weight:700}
+.split-remain.over{color:var(--red);font-weight:700}
 .pay-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:5px;margin-bottom:4px}
 .pay-btn{padding:9px 3px;border:none;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s;display:flex;flex-direction:column;align-items:center;gap:2px}
 .pay-btn:active{transform:scale(.94)}
@@ -816,6 +834,40 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--brown)
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL: Mixed Flavor Picker -->
+<div class="modal-overlay" id="mixedFlavorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎨 คละรส — เลือกสูงสุด 2 รส</div>
+      <button class="modal-close" onclick="closeModal('mixedFlavorModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--gray);margin-bottom:10px">เลือก 1 หรือ 2 รสชาติภายในถุงเดียวกัน</div>
+      <div class="flavor-pick-grid" id="flavorPickGrid"></div>
+      <div style="font-size:11px;color:var(--gray);text-align:center;margin-bottom:10px" id="mixedHint">เลือกแล้ว 0/2</div>
+      <button class="btn-save-prod" id="mixedConfirmBtn" onclick="confirmMixedFlavor()" disabled>➕ เพิ่มลงตะกร้า</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Split Payment -->
+<div class="modal-overlay" id="splitPayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💳 จ่ายหลายช่องทาง</div>
+      <button class="modal-close" onclick="closeModal('splitPayModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--gray);margin-bottom:8px">เลือกช่องทางสูงสุด 2 อัน แล้วใส่จำนวนเงินแต่ละช่อง</div>
+      <div style="font-size:13px;font-weight:800;color:var(--brown);margin-bottom:8px">ยอดรวม: <span id="splitTotal">฿0</span></div>
+      <div class="split-method-row" id="splitMethodBtns"></div>
+      <div id="splitAmountRows"></div>
+      <div class="split-remain" id="splitRemain"></div>
+      <button class="btn-save-prod" id="splitConfirmBtn" onclick="confirmSplitPayment()" disabled>✅ ยืนยันการชำระ</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Add/Edit Promo -->
 <div class="modal-overlay" id="addPromoModal">
   <div class="modal">
@@ -877,8 +929,8 @@ async function sb(path, opts={}) {
 }
 
 // ============ STATE ============
-const METHOD_LABELS = {cash:'💵 เงินสด',qr:'📱 QR',line:'💬 Line OA',shopee:'🛍️ Shopee',tiktok:'🎵 TikTok',gov:'🏛️ โครงการรัฐ'};
-const METHOD_ICONS  = {cash:'💵',qr:'📷',line:'💬',shopee:'🛍️',gov:'🏛️'};
+const METHOD_LABELS = {cash:'💵 เงินสด',qr:'📱 QR',line:'💬 Line OA',shopee:'🛍️ Shopee',tiktok:'🎵 TikTok',gov:'🏛️ โครงการรัฐ',split:'💳 แยกจ่าย'};
+const METHOD_ICONS  = {cash:'💵',qr:'📷',line:'💬',shopee:'🛍️',gov:'🏛️',split:'💳'};
 // Promo constants removed — promos are now fully configurable via Admin > จัดการโปร
 
 let products = [], orders = [], eodRecords = [];
@@ -1252,19 +1304,30 @@ function applyChannelUI() {
   }
   document.getElementById('payGrid').innerHTML = ch.methods.map(m =>
     `<button class="pay-btn ${METHOD_META[m].cls}" onclick="openPayment('${m}')"><span class="pi">${METHOD_META[m].icon}</span>${METHOD_META[m].label}</button>`
-  ).join('');
+  ).join('') +
+  (salesChannel === 'store' ? `<button class="pay-btn" style="background:#7A4210;color:white" onclick="openSplitPay()"><span class="pi">💳</span>แยกจ่าย</button>` : '');
 }
 
 // ============ PRODUCTS ============
 function renderProducts() {
-  document.getElementById('productsGrid').innerHTML = products.map(p => `
-    <div class="product-card ${p.active ? '' : 'out-of-stock'}"
-      onclick="${p.active ? `addToCart('${p.id}')` : ''}">
-      <span class="emoji">${p.emoji}</span>
-      <div class="name">${p.name}</div>
-      <div class="sku">${p.sku}</div>
-      <div class="price">฿${priceFor(p)}</div>
-    </div>`).join('');
+  const activeProds = products.filter(p => p.active);
+  const mixedPrice = activeProds.length > 0 ? priceFor(activeProds[0]) : CHANNELS[salesChannel].price;
+  document.getElementById('productsGrid').innerHTML =
+    products.map(p => `
+      <div class="product-card ${p.active ? '' : 'out-of-stock'}"
+        onclick="${p.active ? `addToCart('${p.id}')` : ''}">
+        <span class="emoji">${p.emoji}</span>
+        <div class="name">${p.name}</div>
+        <div class="sku">${p.sku}</div>
+        <div class="price">฿${priceFor(p)}</div>
+      </div>`).join('') +
+    (activeProds.length >= 2 ? `
+      <div class="product-card" onclick="openMixedFlavor()" style="border:2px dashed var(--banana)">
+        <span class="emoji">🎨</span>
+        <div class="name">คละรส</div>
+        <div class="sku">MIXED</div>
+        <div class="price">฿${mixedPrice}</div>
+      </div>` : '');
 }
 
 function addToCart(id) {
@@ -1300,7 +1363,147 @@ function renderCart() {
     </div>`).join('');
 }
 
-// ============ PROMO LOGIC (dynamic) ============
+// ============ MIXED FLAVOR ============
+let mixedSelected = []; // array of product ids (max 2)
+function openMixedFlavor() {
+  mixedSelected = [];
+  const activeProds = products.filter(p => p.active);
+  document.getElementById('flavorPickGrid').innerHTML = activeProds.map(p => `
+    <div class="flavor-pick-card" id="fpCard_${p.id}" onclick="toggleFlavor('${p.id}')">
+      <span class="fp-emoji">${p.emoji}</span>
+      <div class="fp-name">${p.name}</div>
+    </div>`).join('');
+  updateMixedHint();
+  openModal('mixedFlavorModal');
+}
+function toggleFlavor(id) {
+  if (mixedSelected.includes(id)) {
+    mixedSelected = mixedSelected.filter(x => x !== id);
+  } else {
+    if (mixedSelected.length >= 2) { showToast('เลือกได้สูงสุด 2 รสต่อถุง'); return; }
+    mixedSelected.push(id);
+  }
+  document.querySelectorAll('[id^="fpCard_"]').forEach(el => el.classList.remove('selected'));
+  mixedSelected.forEach(id => document.getElementById('fpCard_'+id)?.classList.add('selected'));
+  updateMixedHint();
+}
+function updateMixedHint() {
+  document.getElementById('mixedHint').textContent = `เลือกแล้ว ${mixedSelected.length}/2`;
+  document.getElementById('mixedConfirmBtn').disabled = mixedSelected.length === 0;
+}
+function confirmMixedFlavor() {
+  if (!mixedSelected.length) return;
+  const prods = mixedSelected.map(id => products.find(p => p.id === id)).filter(Boolean);
+  const price = priceFor(prods[0]);
+  const name = prods.map(p => p.name).join(' + ');
+  const emoji = prods.length === 2 ? '🎨' : prods[0].emoji;
+  const mixedId = 'mixed_' + mixedSelected.sort().join('_');
+  const ex = cart.find(c => c.id === mixedId);
+  if (ex) ex.qty++;
+  else cart.push({id:mixedId, name:'คละรส ('+name+')', sku:'MIXED', price, emoji, is_promo:false, qty:1});
+  closeModal('mixedFlavorModal');
+  renderCart(); updateSummary(); updateSlotBadges();
+  showToast('+ 🎨 คละรส (' + name + ')');
+}
+
+// ============ SPLIT PAYMENT ============
+let splitSelections = []; // [{method, amount}]
+function openSplitPay() {
+  if (!cart.length) { showToast('กรุณาเพิ่มสินค้าก่อน'); return; }
+  if (currentTotal <= 0) { showToast('ยอดรวมต้องมากกว่า 0'); return; }
+  splitSelections = [];
+  document.getElementById('splitTotal').textContent = '฿' + currentTotal.toLocaleString();
+  const methods = CHANNELS.store.methods; // ['cash','qr','gov']
+  document.getElementById('splitMethodBtns').innerHTML = methods.map(m =>
+    `<button class="split-m-btn" id="splitMBtn_${m}" onclick="toggleSplitMethod('${m}')">
+      ${METHOD_META[m].icon} ${METHOD_META[m].label}
+    </button>`).join('');
+  document.getElementById('splitAmountRows').innerHTML = '';
+  document.getElementById('splitRemain').textContent = '';
+  document.getElementById('splitConfirmBtn').disabled = true;
+  openModal('splitPayModal');
+}
+function toggleSplitMethod(method) {
+  const existing = splitSelections.find(s => s.method === method);
+  if (existing) {
+    splitSelections = splitSelections.filter(s => s.method !== method);
+    document.getElementById('splitMBtn_'+method)?.classList.remove('selected');
+  } else {
+    if (splitSelections.length >= 2) { showToast('เลือกได้สูงสุด 2 ช่องทาง'); return; }
+    splitSelections.push({method, amount: 0});
+    document.getElementById('splitMBtn_'+method)?.classList.add('selected');
+  }
+  renderSplitAmountRows();
+}
+function renderSplitAmountRows() {
+  document.getElementById('splitAmountRows').innerHTML = splitSelections.map((s,i) => `
+    <div class="split-amount-row">
+      <div class="split-amount-label">${METHOD_META[s.method].icon} ${METHOD_META[s.method].label}</div>
+      <input type="number" class="split-amount-input" id="splitAmt_${s.method}" 
+        placeholder="0" value="${s.amount || ''}" min="0"
+        oninput="onSplitAmtChange('${s.method}', this.value)">
+      <span style="font-size:12px;color:var(--gray)">฿</span>
+    </div>`).join('');
+  updateSplitRemain();
+}
+function onSplitAmtChange(method, val) {
+  const s = splitSelections.find(x => x.method === method);
+  if (s) s.amount = parseFloat(val) || 0;
+  updateSplitRemain();
+}
+function updateSplitRemain() {
+  const paid = splitSelections.reduce((s,x) => s + (x.amount||0), 0);
+  const remain = currentTotal - paid;
+  const el = document.getElementById('splitRemain');
+  const btn = document.getElementById('splitConfirmBtn');
+  if (remain === 0 && splitSelections.length > 0) {
+    el.textContent = '✅ ครบแล้ว'; el.className = 'split-remain ok';
+    btn.disabled = false;
+  } else if (remain > 0) {
+    el.textContent = `ยังขาด ฿${remain.toLocaleString()}`; el.className = 'split-remain';
+    btn.disabled = true;
+  } else {
+    el.textContent = `เกินมา ฿${Math.abs(remain).toLocaleString()}`; el.className = 'split-remain over';
+    btn.disabled = true;
+  }
+}
+async function confirmSplitPayment() {
+  if (!splitSelections.length) return;
+  const ch = CHANNELS[salesChannel];
+  const sub = cart.reduce((s,c) => s + (parseFloat(c.price)||0) * (parseInt(c.qty)||1), 0);
+  const activePromo = getActivePromo();
+  const promoBaseTotal = calcPromoBaseTotal(sub, activePromo);
+  const promoDisc = sub - promoBaseTotal;
+  const manualDiscount = 0;
+  const order = {
+    id: 'ORD-' + Date.now(),
+    ref: '#' + String(orders.length + 1).padStart(4,'0'),
+    timestamp: new Date().toISOString(),
+    items: cart.map(c => ({...c})),
+    subtotal: sub,
+    promo_discount: Math.max(0, promoDisc),
+    manual_discount: manualDiscount,
+    channel: salesChannel,
+    total: currentTotal,
+    method: 'split',
+    split_payments: JSON.stringify(splitSelections),
+    cash_received: null,
+    has_promo: promoActive && promoDisc > 0,
+    voided: false, void_reason: '', void_by: '', voided_at: null
+  };
+  closeModal('splitPayModal');
+  setSyncDot('loading');
+  try {
+    await saveOrderDB(order);
+    orders.unshift(order);
+    setSyncDot('ok');
+    showSuccess(order);
+    updateSummaryBar();
+  } catch(e) {
+    setSyncDot('err');
+    showToast('❌ บันทึกไม่สำเร็จ: ' + e.message);
+  }
+}
 function getActivePromo() {
   return promos.find(p => p.id === activePromoId) || null;
 }
@@ -1531,15 +1734,19 @@ async function confirmPayment() {
 }
 
 function showSuccess(o) {
-  const icons = {cash:'💵',qr:'📱',line:'💬',shopee:'🛍️',gov:'🏛️'};
-  document.getElementById('sucIcon').textContent = icons[o.method] || '✅';
+  document.getElementById('sucIcon').textContent = o.method === 'split' ? '💳' : (METHOD_ICONS[o.method] || '✅');
   document.getElementById('sucAmount').textContent = '฿' + o.total.toLocaleString();
+  let methodLabel = METHOD_LABELS[o.method] || o.method;
+  if (o.method === 'split' && o.split_payments) {
+    const splits = typeof o.split_payments === 'string' ? JSON.parse(o.split_payments) : o.split_payments;
+    methodLabel = 'แยกจ่าย: ' + splits.map(s => `${METHOD_META[s.method]?.icon||''} ฿${s.amount.toLocaleString()}`).join(' + ');
+  }
   document.getElementById('sucMethod').textContent =
-    METHOD_LABELS[o.method] + ' • ' + o.ref +
+    methodLabel + ' • ' + o.ref +
     (o.method === 'cash' && o.cash_received ? ' • ทอน ฿' + (o.cash_received - o.total).toLocaleString() : '');
   document.getElementById('sucItems').innerHTML =
     o.items.map(i => `<div class="suc-item"><span>${i.emoji} ${i.name} ×${i.qty}</span><span>฿${(i.price*i.qty).toLocaleString()}</span></div>`).join('') +
-    (o.promo_discount > 0 ? `<div class="suc-item"><span>🎁 ส่วนลดโปร ${o.has_promo?'('+promoSets+' เซ็ต)':''}</span><span style="color:var(--red)">-฿${o.promo_discount.toLocaleString()}</span></div>` : '') +
+    (o.promo_discount > 0 ? `<div class="suc-item"><span>🎁 ส่วนลดโปร</span><span style="color:var(--red)">-฿${o.promo_discount.toLocaleString()}</span></div>` : '') +
     `<div class="suc-item total"><span>รวม</span><span>฿${o.total.toLocaleString()}</span></div>`;
   openModal('successModal');
 }
